@@ -297,7 +297,7 @@ export default function TaxesPage() {
     <div className="space-y-8">
       {/* ── Individual Taxes ── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Taxes</h1>
           <Button onClick={openCreateTax}>+ Add Tax</Button>
         </div>
@@ -318,56 +318,73 @@ export default function TaxesPage() {
                 </button>
               </div>
             ) : (
-              <Table>
-                <TableHead>
-                  <tr>
-                    <TableTh>Tax</TableTh>
-                    <TableTh>Default</TableTh>
-                    <TableTh></TableTh>
-                  </tr>
-                </TableHead>
-                <TableBody>
+              <>
+                {/* Mobile cards */}
+                <div className="sm:hidden divide-y divide-gray-100">
                   {taxes.map((t) => (
-                    <>
-                      <TableRow key={t.id}>
-                        <TableTd className="font-medium">{taxLabel(t)}</TableTd>
-                        <TableTd>
-                          {t.isDefault ? (
-                            <Badge variant="success">Default</Badge>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </TableTd>
-                        <TableTd>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => openEditTax(t)}
-                              className="text-blue-600 text-xs hover:underline"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTax(t.id)}
-                              className="text-red-500 text-xs hover:underline"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </TableTd>
-                      </TableRow>
+                    <div key={t.id}>
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{taxLabel(t)}</p>
+                          {t.isDefault && <Badge variant="success">Default</Badge>}
+                        </div>
+                        <div className="flex gap-3 ml-3">
+                          <button onClick={() => openEditTax(t)} className="text-blue-600 text-sm hover:underline">Edit</button>
+                          <button onClick={() => handleDeleteTax(t.id)} className="text-red-500 text-sm hover:underline">Delete</button>
+                        </div>
+                      </div>
                       {deleteErrors[t.id] && (
-                        <TableRow key={`${t.id}-err`}>
-                          <TableTd colSpan={3}>
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
-                              {deleteErrors[t.id]}
-                            </div>
-                          </TableTd>
-                        </TableRow>
+                        <div className="mx-4 mb-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
+                          {deleteErrors[t.id]}
+                        </div>
                       )}
-                    </>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+                {/* Desktop table */}
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHead>
+                      <tr>
+                        <TableTh>Tax</TableTh>
+                        <TableTh>Default</TableTh>
+                        <TableTh></TableTh>
+                      </tr>
+                    </TableHead>
+                    <TableBody>
+                      {taxes.map((t) => (
+                        <>
+                          <TableRow key={t.id}>
+                            <TableTd className="font-medium">{taxLabel(t)}</TableTd>
+                            <TableTd>
+                              {t.isDefault ? (
+                                <Badge variant="success">Default</Badge>
+                              ) : (
+                                <span className="text-gray-400">—</span>
+                              )}
+                            </TableTd>
+                            <TableTd>
+                              <div className="flex gap-2">
+                                <button onClick={() => openEditTax(t)} className="text-blue-600 text-xs hover:underline">Edit</button>
+                                <button onClick={() => handleDeleteTax(t.id)} className="text-red-500 text-xs hover:underline">Delete</button>
+                              </div>
+                            </TableTd>
+                          </TableRow>
+                          {deleteErrors[t.id] && (
+                            <TableRow key={`${t.id}-err`}>
+                              <TableTd colSpan={3}>
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs">
+                                  {deleteErrors[t.id]}
+                                </div>
+                              </TableTd>
+                            </TableRow>
+                          )}
+                        </>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -375,14 +392,14 @@ export default function TaxesPage() {
 
       {/* ── Tax Groups ── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="text-xl font-bold text-gray-900">Tax Groups</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               Combine multiple taxes into a group for easy document application.
             </p>
           </div>
-          <Button onClick={openCreateGroup}>+ Add Group</Button>
+          <Button onClick={openCreateGroup} className="sm:shrink-0">+ Add Group</Button>
         </div>
 
         <Card>
@@ -401,66 +418,85 @@ export default function TaxesPage() {
                 </button>
               </div>
             ) : (
-              <Table>
-                <TableHead>
-                  <tr>
-                    <TableTh>Group Name</TableTh>
-                    <TableTh>Taxes</TableTh>
-                    <TableTh>Default</TableTh>
-                    <TableTh></TableTh>
-                  </tr>
-                </TableHead>
-                <TableBody>
+              <>
+                {/* Mobile cards */}
+                <div className="sm:hidden divide-y divide-gray-100">
                   {groups.map((g) => {
                     const sortedItems = [...g.items].sort((a, b) => a.order - b.order);
                     return (
-                      <TableRow key={g.id}>
-                        <TableTd className="font-medium">{g.name}</TableTd>
-                        <TableTd>
-                          <div className="flex flex-wrap gap-1">
-                            {sortedItems.map((item) => (
-                              <span
-                                key={item.id}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700"
-                              >
-                                {taxLabel(item.tax)}
-                                {item.isCompound && (
-                                  <span className="ml-1 text-orange-500" title="Compound">
-                                    ⊕
-                                  </span>
-                                )}
-                              </span>
-                            ))}
+                      <div key={g.id} className="px-4 py-3">
+                        <div className="flex items-start justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900">{g.name}</p>
+                            {g.isDefault && <Badge variant="success">Default</Badge>}
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {sortedItems.map((item) => (
+                                <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
+                                  {taxLabel(item.tax)}
+                                  {item.isCompound && <span className="ml-1 text-orange-500" title="Compound">⊕</span>}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </TableTd>
-                        <TableTd>
-                          {g.isDefault ? (
-                            <Badge variant="success">Default</Badge>
-                          ) : (
-                            <span className="text-gray-400">—</span>
-                          )}
-                        </TableTd>
-                        <TableTd>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => openEditGroup(g)}
-                              className="text-blue-600 text-xs hover:underline"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteGroup(g.id)}
-                              className="text-red-500 text-xs hover:underline"
-                            >
-                              Delete
-                            </button>
+                          <div className="flex gap-3 ml-3 shrink-0">
+                            <button onClick={() => openEditGroup(g)} className="text-blue-600 text-sm hover:underline">Edit</button>
+                            <button onClick={() => handleDeleteGroup(g.id)} className="text-red-500 text-sm hover:underline">Delete</button>
                           </div>
-                        </TableTd>
-                      </TableRow>
+                        </div>
+                      </div>
                     );
                   })}
-                </TableBody>
-              </Table>
+                </div>
+                {/* Desktop table */}
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHead>
+                      <tr>
+                        <TableTh>Group Name</TableTh>
+                        <TableTh>Taxes</TableTh>
+                        <TableTh>Default</TableTh>
+                        <TableTh></TableTh>
+                      </tr>
+                    </TableHead>
+                    <TableBody>
+                      {groups.map((g) => {
+                        const sortedItems = [...g.items].sort((a, b) => a.order - b.order);
+                        return (
+                          <TableRow key={g.id}>
+                            <TableTd className="font-medium">{g.name}</TableTd>
+                            <TableTd>
+                              <div className="flex flex-wrap gap-1">
+                                {sortedItems.map((item) => (
+                                  <span
+                                    key={item.id}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700"
+                                  >
+                                    {taxLabel(item.tax)}
+                                    {item.isCompound && (
+                                      <span className="ml-1 text-orange-500" title="Compound">
+                                        ⊕
+                                      </span>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            </TableTd>
+                            <TableTd>
+                              {g.isDefault ? <Badge variant="success">Default</Badge> : <span className="text-gray-400">—</span>}
+                            </TableTd>
+                            <TableTd>
+                              <div className="flex gap-2">
+                                <button onClick={() => openEditGroup(g)} className="text-blue-600 text-xs hover:underline">Edit</button>
+                                <button onClick={() => handleDeleteGroup(g.id)} className="text-red-500 text-xs hover:underline">Delete</button>
+                              </div>
+                            </TableTd>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -575,10 +611,10 @@ export default function TaxesPage() {
                 return (
                   <div
                     key={index}
-                    className="flex items-start gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50"
+                    className="flex flex-col sm:flex-row sm:items-start gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50"
                   >
                     {/* Order controls */}
-                    <div className="flex flex-col gap-0.5 mt-1">
+                    <div className="flex sm:flex-col gap-1 sm:gap-0.5 mt-1">
                       <button
                         type="button"
                         onClick={() => moveStep(index, "up")}
