@@ -40,7 +40,7 @@ export async function PUT(req: Request) {
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const { name, businessName, businessEmail, businessPhone, businessAddress, country, currency, bankingDetails } = body;
+    const { name, businessName, businessEmail, businessPhone, businessAddress, country, currency, bankingDetails, businessLogo } = body;
 
     const user = await prisma.user.update({
       where: { id: session.user.id },
@@ -53,6 +53,7 @@ export async function PUT(req: Request) {
         country,
         currency,
         bankingDetails,
+        ...(businessLogo !== undefined && { businessLogo }),
       },
     });
 

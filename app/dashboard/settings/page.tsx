@@ -25,7 +25,9 @@ export default function SettingsPage() {
     businessAddress: "",
     country: "KE",
     currency: "KES",
+    businessLogo: "",
   });
+  const [logoUploading, setLogoUploading] = useState(false);
   const [banking, setBanking] = useState<Record<string, string>>({});
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
 
@@ -40,6 +42,7 @@ export default function SettingsPage() {
           businessAddress: d.data.businessAddress ?? "",
           country: d.data.country ?? "KE",
           currency: d.data.currency ?? "KES",
+          businessLogo: d.data.businessLogo ?? "",
         });
         if (d.data.bankingDetails) setBanking(d.data.bankingDetails);
       }
@@ -47,6 +50,20 @@ export default function SettingsPage() {
   }, []);
 
   const countryConfig = getCountryConfig(profile.country);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    setError("");
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await res.json();
+    setLogoUploading(false);
+    if (!res.ok) { setError(data.error ?? "Upload failed"); return; }
+    setProfile((p) => ({ ...p, businessLogo: data.data.url }));
+  }
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -56,7 +73,7 @@ export default function SettingsPage() {
     const res = await fetch("/api/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...profile, bankingDetails: banking }),
+      body: JSON.stringify({ ...profile, bankingDetails: banking, businessLogo: profile.businessLogo }),
     });
     const data = await res.json();
     setLoading(false);
@@ -128,6 +145,46 @@ export default function SettingsPage() {
             <Card>
               <CardHeader><CardTitle>Personal Info</CardTitle></CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <Label>Business Logo</Label>
+                  <div className="flex items-center gap-4 mt-1">
+                    {profile.businessLogo ? (
+                      <img
+                        src={profile.businessLogo}
+                        alt="Business logo"
+                        className="h-16 w-16 object-contain rounded-lg border border-gray-200 bg-white p-1"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs">
+                        No logo
+                      </div>
+                    )}
+                    <div>
+                      <label className="cursor-pointer">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                          {logoUploading ? "Uploading..." : "Upload Logo"}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                          className="sr-only"
+                          onChange={handleLogoUpload}
+                          disabled={logoUploading}
+                        />
+                      </label>
+                      <p className="text-xs text-gray-400 mt-1">PNG, JPG, SVG up to 5MB</p>
+                      {profile.businessLogo && (
+                        <button
+                          type="button"
+                          onClick={() => setProfile((p) => ({ ...p, businessLogo: "" }))}
+                          className="text-xs text-red-500 hover:underline mt-1 block"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <Label required>Full Name</Label>
                   <Input value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} />
