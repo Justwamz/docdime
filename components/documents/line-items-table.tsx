@@ -221,7 +221,93 @@ export function LineItemsTable({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto">
+      {/* Mobile: stacked cards */}
+      <div className="sm:hidden space-y-3">
+        {items.map((item, index) => {
+          const selKey = selectionKeyFromItem(item);
+          const snapshot = item.appliedTaxes;
+          return (
+            <div key={index} className="border border-gray-200 rounded-xl p-3 space-y-2 bg-gray-50">
+              <div className="flex items-start gap-2">
+                <div className="flex-1">
+                  <Input
+                    value={item.description}
+                    onChange={(e) => updateItem(index, "description", e.target.value)}
+                    placeholder="Item description"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeItem(index)}
+                  className="text-gray-400 hover:text-red-500 transition-colors mt-2"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Qty</p>
+                  <Input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(index, "quantity", parseFloat(e.target.value) || 0)}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Unit Price</p>
+                  <Input
+                    type="number"
+                    value={item.unitPrice}
+                    onChange={(e) => updateItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              {hasTaxOptions && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Tax</p>
+                  <TaxDropdown
+                    taxes={taxes}
+                    taxGroups={taxGroups}
+                    value={selKey}
+                    onChange={(key) => updateTaxSelection(index, key)}
+                    base={item.quantity * item.unitPrice}
+                  />
+                  {snapshot && (
+                    <div className="mt-1 space-y-0.5">
+                      {snapshot.type === "tax" ? (
+                        <div className="text-xs text-gray-400 flex justify-between">
+                          <span>{taxLabel({ name: snapshot.name, rate: snapshot.rate, isInclusive: snapshot.isInclusive })}</span>
+                          <span>{formatCurrency(snapshot.amount, currency)}</span>
+                        </div>
+                      ) : (
+                        snapshot.items.map((a) => (
+                          <div key={a.taxId} className="text-xs text-gray-400 flex justify-between">
+                            <span>{taxLabel({ name: a.name, rate: a.rate, isInclusive: a.isInclusive })}{a.isCompound ? " (cmpd.)" : ""}</span>
+                            <span>{formatCurrency(a.amount, currency)}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-1 border-t border-gray-100">
+                <span className="text-xs text-gray-500">Total</span>
+                <span className="text-sm font-semibold">{formatCurrency(item.total, currency)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50">
@@ -358,7 +444,7 @@ export function LineItemsTable({
 
       {/* Totals */}
       <div className="flex justify-end">
-        <div className="w-64 space-y-2">
+        <div className="w-full sm:w-64 space-y-2">
           <div className="flex justify-between text-sm text-gray-600">
             <span>Subtotal</span>
             <span>{formatCurrency(subtotal, currency)}</span>

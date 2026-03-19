@@ -174,7 +174,7 @@ export default function NewDocumentPage() {
           <CardTitle>Document Type</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             {[
               { value: "INVOICE", label: "Invoice" },
               { value: "QUOTE", label: "Quote" },
@@ -311,11 +311,11 @@ export default function NewDocumentPage() {
       </Card>
 
       {/* Actions */}
-      <div className="flex gap-3 pb-6">
-        <Button variant="outline" onClick={handleSaveDraft} loading={loading}>
+      <div className="flex flex-col sm:flex-row gap-3 pb-6">
+        <Button variant="outline" onClick={handleSaveDraft} loading={loading} className="w-full sm:w-auto">
           Save Draft
         </Button>
-        <Button onClick={handleGeneratePDF} loading={loading}>
+        <Button onClick={handleGeneratePDF} loading={loading} className="w-full sm:w-auto">
           Generate PDF — $0.11
         </Button>
       </div>
