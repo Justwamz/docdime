@@ -1,5 +1,5 @@
 import { PDFDocument, rgb, StandardFonts, degrees, PDFImage } from "pdf-lib";
-import { formatCurrency, formatDate } from "./utils";
+import { formatCurrency, formatDate, readAppliedTaxes } from "./utils";
 
 interface LineItem {
   description: string;
@@ -7,6 +7,7 @@ interface LineItem {
   unitPrice: number;
   taxRate: number;
   total: number;
+  appliedTaxes?: unknown;  // AppliedTaxSnapshot | AppliedTax[] | null — use unknown to avoid circular import, readAppliedTaxes handles all cases
 }
 
 interface PDFData {
@@ -317,15 +318,50 @@ export async function generatePDF(data: PDFData): Promise<Uint8Array> {
     color: darkColor,
   });
 
-  yPos -= 16;
-  page.drawText("Tax:", { x: totalsX, y: yPos, size: 9, font: regularFont, color: grayColor });
-  page.drawText(formatCurrency(data.taxAmount, data.currency), {
-    x: 490,
-    y: yPos,
-    size: 9,
-    font: regularFont,
-    color: darkColor,
+  // Build tax breakdown from line items
+  const taxComponents = new Map<string, { label: string; amount: number }>();
+
+  data.lineItems.forEach((item) => {
+    const snap = readAppliedTaxes(item.appliedTaxes);
+    if (!snap) return;
+
+    if (snap.type === "tax") {
+      const label = `${snap.name} ${snap.rate}%${snap.isInclusive ? " (incl.)" : ""}`;
+      const prev = taxComponents.get(snap.taxId);
+      taxComponents.set(snap.taxId, {
+        label,
+        amount: (prev?.amount ?? 0) + snap.amount,
+      });
+    } else {
+      // group
+      snap.items.forEach((taxItem) => {
+        const label = `${taxItem.name} ${taxItem.rate}%${taxItem.isInclusive ? " (incl.)" : ""}`;
+        const prev = taxComponents.get(taxItem.taxId);
+        taxComponents.set(taxItem.taxId, {
+          label,
+          amount: (prev?.amount ?? 0) + taxItem.amount,
+        });
+      });
+    }
   });
+
+  if (taxComponents.size === 0) {
+    // no tax breakdown available — fall back to a single "Tax" line
+    yPos -= 16;
+    page.drawText("Tax:", { x: totalsX, y: yPos, size: 9, font: regularFont, color: grayColor });
+    page.drawText(formatCurrency(data.taxAmount, data.currency), {
+      x: 490, y: yPos, size: 9, font: regularFont, color: darkColor,
+    });
+  } else {
+    // render one line per unique tax component
+    for (const { label, amount } of Array.from(taxComponents.values())) {
+      yPos -= 16;
+      page.drawText(label, { x: totalsX, y: yPos, size: 9, font: regularFont, color: grayColor });
+      page.drawText(formatCurrency(amount, data.currency), {
+        x: 490, y: yPos, size: 9, font: regularFont, color: darkColor,
+      });
+    }
+  }
 
   yPos -= 4;
   page.drawLine({
