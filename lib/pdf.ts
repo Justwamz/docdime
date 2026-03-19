@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts, degrees } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, degrees, PDFImage } from "pdf-lib";
 import { formatCurrency, formatDate } from "./utils";
 
 interface LineItem {
@@ -30,6 +30,33 @@ interface PDFData {
   notes?: string;
   terms?: string;
   bankingDetails?: Record<string, string>;
+  businessLogo?: string;
+}
+
+async function embedLogo(pdfDoc: PDFDocument, logoUrl: string): Promise<PDFImage | null> {
+  try {
+    let bytes: Uint8Array;
+    let isJpeg = false;
+
+    if (logoUrl.startsWith("data:")) {
+      const [header, base64] = logoUrl.split(",");
+      if (!base64) return null;
+      isJpeg = header.includes("jpeg") || header.includes("jpg");
+      if (!header.includes("png") && !isJpeg) return null; // svg/webp not supported by pdf-lib
+      bytes = Buffer.from(base64, "base64");
+    } else {
+      const res = await fetch(logoUrl);
+      if (!res.ok) return null;
+      const ct = res.headers.get("content-type") ?? "";
+      isJpeg = ct.includes("jpeg") || ct.includes("jpg");
+      if (!ct.includes("png") && !isJpeg) return null;
+      bytes = new Uint8Array(await res.arrayBuffer());
+    }
+
+    return isJpeg ? await pdfDoc.embedJpg(bytes) : await pdfDoc.embedPng(bytes);
+  } catch {
+    return null;
+  }
 }
 
 export async function generatePDF(data: PDFData): Promise<Uint8Array> {
@@ -39,6 +66,8 @@ export async function generatePDF(data: PDFData): Promise<Uint8Array> {
 
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const logoImage = data.businessLogo ? await embedLogo(pdfDoc, data.businessLogo) : null;
 
   const primaryColor = rgb(0.15, 0.39, 0.92); // Blue
   const darkColor = rgb(0.1, 0.1, 0.1);
@@ -103,23 +132,37 @@ export async function generatePDF(data: PDFData): Promise<Uint8Array> {
     });
   }
 
-  // Business info (right side of header)
-  const businessLines = [
-    data.businessName,
-    data.businessEmail ?? "",
-    data.businessPhone ?? "",
-  ].filter(Boolean);
-
-  businessLines.forEach((line, i) => {
-    const textWidth = boldFont.widthOfTextAtSize(line, 10);
-    page.drawText(line, {
-      x: width - 40 - textWidth,
-      y: height - 45 - i * 16,
-      size: 10,
-      font: i === 0 ? boldFont : regularFont,
-      color: rgb(1, 1, 1),
+  // Right side of header: logo if available, else business text
+  if (logoImage) {
+    const maxW = 100;
+    const maxH = 80;
+    const scale = Math.min(maxW / logoImage.width, maxH / logoImage.height);
+    const logoW = logoImage.width * scale;
+    const logoH = logoImage.height * scale;
+    page.drawImage(logoImage, {
+      x: width - 40 - logoW,
+      y: height - 20 - logoH,
+      width: logoW,
+      height: logoH,
     });
-  });
+  } else {
+    const businessLines = [
+      data.businessName,
+      data.businessEmail ?? "",
+      data.businessPhone ?? "",
+    ].filter(Boolean);
+
+    businessLines.forEach((line, i) => {
+      const textWidth = boldFont.widthOfTextAtSize(line, 10);
+      page.drawText(line, {
+        x: width - 40 - textWidth,
+        y: height - 45 - i * 16,
+        size: 10,
+        font: i === 0 ? boldFont : regularFont,
+        color: rgb(1, 1, 1),
+      });
+    });
+  }
 
   // FROM / TO sections
   let yPos = height - 155;

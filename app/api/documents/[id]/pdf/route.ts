@@ -31,6 +31,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       businessEmail: user.businessEmail ?? undefined,
       businessPhone: user.businessPhone ?? undefined,
       businessAddress: user.businessAddress ?? undefined,
+      businessLogo: user.businessLogo ?? undefined,
       customerName: doc.customer?.name,
       customerEmail: doc.customer?.email ?? undefined,
       customerAddress: doc.customer?.address ?? undefined,
