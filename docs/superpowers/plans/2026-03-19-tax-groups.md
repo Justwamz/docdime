@@ -1645,7 +1645,7 @@ This script transforms existing `LineItem.appliedTaxes` records from the old fla
 
 ```ts
 import { PrismaClient } from "@prisma/client";
-import type { AppliedTax, AppliedTaxSnapshot } from "../types";
+import type { AppliedTax, AppliedTaxSnapshot } from "../../types";
 
 const prisma = new PrismaClient();
 
