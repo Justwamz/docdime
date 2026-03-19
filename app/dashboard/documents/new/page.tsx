@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineItemsTable } from "@/components/documents/line-items-table";
-import type { LineItem } from "@/types";
+import type { LineItem, TaxGroup } from "@/types";
 
 declare global {
   interface Window {
@@ -26,7 +26,8 @@ export default function NewDocumentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
-  const [taxes, setTaxes] = useState<Array<{ id: string; name: string; rate: number; isDefault: boolean; isInclusive: boolean; isCompound: boolean }>>([]);
+  const [taxes, setTaxes] = useState<Array<{ id: string; name: string; rate: number; isDefault: boolean; isInclusive: boolean }>>([]);
+  const [taxGroups, setTaxGroups] = useState<TaxGroup[]>([]);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unitPrice: 0, taxRate: 0, total: 0 },
   ]);
@@ -44,6 +45,7 @@ export default function NewDocumentPage() {
   useEffect(() => {
     fetch("/api/customers").then((r) => r.json()).then((d) => setCustomers(d.data ?? []));
     fetch("/api/taxes").then((r) => r.json()).then((d) => setTaxes(d.data ?? []));
+    fetch("/api/tax-groups").then((r) => r.json()).then((d) => setTaxGroups(d.data ?? []));
   }, []);
 
   function updateForm(field: string, value: string) {
@@ -51,10 +53,10 @@ export default function NewDocumentPage() {
   }
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const taxAmount = lineItems.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice * (item.taxRate / 100),
-    0
-  );
+  const taxAmount = lineItems.reduce((sum, item) => {
+    const base = item.quantity * item.unitPrice;
+    return sum + (item.total - base);
+  }, 0);
   const total = subtotal + taxAmount;
 
   async function handleGeneratePDF() {
@@ -274,6 +276,7 @@ export default function NewDocumentPage() {
             onChange={setLineItems}
             currency={form.currency}
             taxes={taxes}
+            taxGroups={taxGroups}
           />
         </CardContent>
       </Card>
