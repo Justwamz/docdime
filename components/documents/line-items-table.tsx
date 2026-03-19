@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 import { computeLineTaxes } from "@/lib/utils";
-import type { LineItem, Tax } from "@/types";
+import type { AppliedTax, LineItem, Tax } from "@/types";
 
 interface LineItemsTableProps {
   items: LineItem[];
@@ -90,7 +90,7 @@ export function LineItemsTable({
   const addItem = () => {
     onChange([
       ...items,
-      { description: "", quantity: 1, unitPrice: 0, taxRate: 0, appliedTaxes: [], total: 0 },
+      { description: "", quantity: 1, unitPrice: 0, taxRate: 0, appliedTaxes: null, total: 0 },
     ]);
   };
 
@@ -121,9 +121,18 @@ export function LineItemsTable({
     return recalcWithTaxes(item, item._selectedTaxes ?? getSelectedTaxes(item));
   }
 
+  function getAppliedTaxItems(item: LineItem): AppliedTax[] {
+    if (!item.appliedTaxes) return [];
+    if (item.appliedTaxes.type === "group") return item.appliedTaxes.items;
+    // type === "tax": single-tax snapshot
+    const s = item.appliedTaxes;
+    return [{ taxId: s.taxId, name: s.name, rate: s.rate, isInclusive: s.isInclusive, isCompound: false, amount: s.amount }];
+  }
+
   function getSelectedTaxes(item: LineItem): Tax[] {
-    if (!item.appliedTaxes?.length) return [];
-    return taxes.filter((t) => item.appliedTaxes!.some((a) => a.taxId === t.id));
+    const applied = getAppliedTaxItems(item);
+    if (!applied.length) return [];
+    return taxes.filter((t) => applied.some((a) => a.taxId === t.id));
   }
 
   function recalcWithTaxes(item: LineItem & { _selectedTaxes?: Tax[]; _selectedTaxIds?: string[] }, selectedTaxes: Tax[]): LineItem {
@@ -136,12 +145,15 @@ export function LineItemsTable({
       isInclusive: t.isInclusive,
     }));
     const { breakdown, totalTax, effectiveRate } = computeLineTaxes(base, taxInput);
+    const snapshot = breakdown.length > 0
+      ? { type: "group" as const, groupId: "", groupName: "", items: breakdown }
+      : null;
     return {
       description: item.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       taxRate: Math.round(effectiveRate * 100) / 100,
-      appliedTaxes: breakdown,
+      appliedTaxes: snapshot,
       total: base + totalTax,
     };
   }
@@ -155,7 +167,7 @@ export function LineItemsTable({
 
   // Build a map of selected tax IDs per item from appliedTaxes
   function getSelectedIds(item: LineItem): string[] {
-    return item.appliedTaxes?.map((a) => a.taxId) ?? [];
+    return getAppliedTaxItems(item).map((a) => a.taxId);
   }
 
   return (
@@ -208,9 +220,9 @@ export function LineItemsTable({
                         selectedIds={getSelectedIds(item)}
                         onChange={(ids) => updateTaxes(index, ids)}
                       />
-                      {item.appliedTaxes && item.appliedTaxes.length > 0 && (
+                      {getAppliedTaxItems(item).length > 0 && (
                         <div className="mt-1 space-y-0.5">
-                          {item.appliedTaxes.map((a) => (
+                          {getAppliedTaxItems(item).map((a) => (
                             <div key={a.taxId} className="text-xs text-gray-400 flex justify-between">
                               <span>{a.name}{a.isInclusive ? " (incl.)" : a.isCompound ? " (cmpd.)" : ""}</span>
                               <span>{formatCurrency(a.amount, currency)}</span>

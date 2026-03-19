@@ -46,10 +46,52 @@ export interface AppliedTax {
   taxId: string;
   name: string;
   rate: number;
-  isCompound: boolean;
   isInclusive: boolean;
+  isCompound: boolean;
   amount: number;
 }
+
+export type AppliedTaxSnapshot =
+  | {
+      type: "tax";
+      taxId: string;
+      name: string;
+      rate: number;
+      isInclusive: boolean;
+      amount: number;
+    }
+  | {
+      type: "group";
+      groupId: string;
+      groupName: string;
+      items: AppliedTax[];
+    };
+
+export interface TaxGroupItem {
+  id: string;
+  groupId: string;
+  taxId: string;
+  tax: Tax;
+  order: number;
+  isCompound: boolean;
+}
+
+export interface TaxGroup {
+  id: string;
+  userId: string;
+  name: string;
+  isDefault: boolean;
+  items: TaxGroupItem[];
+}
+
+export type TaxSelection =
+  | { type: "tax"; taxId: string; name: string; rate: number; isInclusive: boolean }
+  | {
+      type: "group";
+      groupId: string;
+      groupName: string;
+      items: Array<{ taxId: string; name: string; rate: number; isInclusive: boolean; isCompound: boolean }>;
+    };
 
 export interface LineItem {
   id?: string;
@@ -57,7 +99,7 @@ export interface LineItem {
   quantity: number;
   unitPrice: number;
   taxRate: number;        // effective combined rate (for display/PDF)
-  appliedTaxes?: AppliedTax[];
+  appliedTaxes?: AppliedTaxSnapshot | null;
   total: number;
 }
 
