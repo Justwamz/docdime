@@ -29,7 +29,7 @@ export default async function DocumentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
         <Link href="/dashboard/documents/new">
           <Button>+ New Document</Button>
@@ -64,50 +64,73 @@ export default async function DocumentsPage({
               </Link>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-medium">Doc #</th>
-                    <th className="px-4 py-3 text-left font-medium">Type</th>
-                    <th className="px-4 py-3 text-left font-medium">Customer</th>
-                    <th className="px-4 py-3 text-left font-medium">Date</th>
-                    <th className="px-4 py-3 text-left font-medium">Amount</th>
-                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {documents.map((doc) => {
-                    const overdue = isOverdue(doc);
-                    const expired = isExpired(doc);
-                    return (
-                      <tr key={doc.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <Link href={`/dashboard/documents/${doc.id}`} className="font-medium text-blue-600 hover:underline">
-                            {doc.docNumber}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-gray-500">
-                          {doc.type === "PURCHASE_ORDER" ? "PO" : doc.type}
-                        </td>
-                        <td className="px-4 py-3 text-gray-700">{doc.customer?.name ?? "—"}</td>
-                        <td className="px-4 py-3 text-gray-500">{formatDate(doc.issueDate)}</td>
-                        <td className="px-4 py-3 font-medium">{formatCurrency(doc.total, doc.currency)}</td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={doc.status} isOverdue={overdue} isExpired={expired} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <Link href={`/dashboard/documents/${doc.id}`} className="text-gray-400 hover:text-gray-600">
-                            →
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile card layout */}
+              <div className="sm:hidden divide-y divide-gray-100">
+                {documents.map((doc) => {
+                  const overdue = isOverdue(doc);
+                  const expired = isExpired(doc);
+                  return (
+                    <Link key={doc.id} href={`/dashboard/documents/${doc.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                      <div className="min-w-0">
+                        <p className="font-medium text-blue-600 text-sm">{doc.docNumber}</p>
+                        <p className="text-xs text-gray-500 truncate">{doc.customer?.name ?? "—"} · {doc.type === "PURCHASE_ORDER" ? "PO" : doc.type} · {formatDate(doc.issueDate)}</p>
+                      </div>
+                      <div className="text-right ml-3 flex-shrink-0">
+                        <p className="text-sm font-medium">{formatCurrency(doc.total, doc.currency)}</p>
+                        <StatusBadge status={doc.status} isOverdue={overdue} isExpired={expired} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Desktop table layout */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium">Doc #</th>
+                      <th className="px-4 py-3 text-left font-medium">Type</th>
+                      <th className="px-4 py-3 text-left font-medium">Customer</th>
+                      <th className="px-4 py-3 text-left font-medium">Date</th>
+                      <th className="px-4 py-3 text-left font-medium">Amount</th>
+                      <th className="px-4 py-3 text-left font-medium">Status</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {documents.map((doc) => {
+                      const overdue = isOverdue(doc);
+                      const expired = isExpired(doc);
+                      return (
+                        <tr key={doc.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <Link href={`/dashboard/documents/${doc.id}`} className="font-medium text-blue-600 hover:underline">
+                              {doc.docNumber}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500">
+                            {doc.type === "PURCHASE_ORDER" ? "PO" : doc.type}
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">{doc.customer?.name ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-500">{formatDate(doc.issueDate)}</td>
+                          <td className="px-4 py-3 font-medium">{formatCurrency(doc.total, doc.currency)}</td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={doc.status} isOverdue={overdue} isExpired={expired} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link href={`/dashboard/documents/${doc.id}`} className="text-gray-400 hover:text-gray-600">
+                              →
+                            </Link>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

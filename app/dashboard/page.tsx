@@ -68,7 +68,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Welcome back, {session.user.name?.split(" ")[0] ?? "there"}!
@@ -112,35 +112,56 @@ export default async function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium">Document</th>
-                  <th className="px-4 py-3 text-left font-medium">Customer</th>
-                  <th className="px-4 py-3 text-left font-medium">Amount</th>
-                  <th className="px-4 py-3 text-left font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+            <>
+              {/* Mobile card layout */}
+              <div className="sm:hidden divide-y divide-gray-100">
                 {recentDocs.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <Link href={`/dashboard/documents/${doc.id}`} className="font-medium text-blue-600 hover:underline">
-                        {doc.docNumber}
-                      </Link>
-                      <span className="ml-2 text-xs text-gray-400">{doc.type}</span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">{doc.customer?.name ?? "—"}</td>
-                    <td className="px-4 py-3 font-medium">{formatCurrency(doc.total, doc.currency)}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={doc.status === "PAID" ? "success" : doc.status === "SENT" ? "info" : "gray"}>
-                        {doc.status}
-                      </Badge>
-                    </td>
-                  </tr>
+                  <Link key={doc.id} href={`/dashboard/documents/${doc.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                    <div>
+                      <p className="font-medium text-blue-600 text-sm">{doc.docNumber}</p>
+                      <p className="text-xs text-gray-400">{doc.customer?.name ?? "—"} · {doc.type}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{formatCurrency(doc.total, doc.currency)}</p>
+                      <Badge variant={doc.status === "PAID" ? "success" : doc.status === "SENT" ? "info" : "gray"}>{doc.status}</Badge>
+                    </div>
+                  </Link>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop table layout */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-medium">Document</th>
+                      <th className="px-4 py-3 text-left font-medium">Customer</th>
+                      <th className="px-4 py-3 text-left font-medium">Amount</th>
+                      <th className="px-4 py-3 text-left font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {recentDocs.map((doc) => (
+                      <tr key={doc.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <Link href={`/dashboard/documents/${doc.id}`} className="font-medium text-blue-600 hover:underline">
+                            {doc.docNumber}
+                          </Link>
+                          <span className="ml-2 text-xs text-gray-400">{doc.type}</span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{doc.customer?.name ?? "—"}</td>
+                        <td className="px-4 py-3 font-medium">{formatCurrency(doc.total, doc.currency)}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant={doc.status === "PAID" ? "success" : doc.status === "SENT" ? "info" : "gray"}>
+                            {doc.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -148,7 +169,7 @@ export default async function DashboardPage() {
       {/* Pro upsell */}
       {user?.plan !== "PRO" && (
         <Card className="border-blue-200 bg-blue-50">
-          <CardContent className="flex items-center justify-between py-5">
+          <CardContent className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-5">
             <div>
               <p className="font-semibold text-blue-900">Upgrade to Pro</p>
               <p className="text-sm text-blue-700 mt-0.5">
