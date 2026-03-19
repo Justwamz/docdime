@@ -83,7 +83,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
         <Button onClick={openCreate}>+ Add Customer</Button>
       </div>
@@ -101,33 +101,53 @@ export default function CustomersPage() {
               </button>
             </div>
           ) : (
-            <Table>
-              <TableHead>
-                <tr>
-                  <TableTh>Name</TableTh>
-                  <TableTh>Email</TableTh>
-                  <TableTh>Phone</TableTh>
-                  <TableTh>Address</TableTh>
-                  <TableTh></TableTh>
-                </tr>
-              </TableHead>
-              <TableBody>
-                {customers.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableTd className="font-medium">{c.name}</TableTd>
-                    <TableTd>{c.email ?? "—"}</TableTd>
-                    <TableTd>{c.phone ?? "—"}</TableTd>
-                    <TableTd>{c.address ?? "—"}</TableTd>
-                    <TableTd>
-                      <div className="flex gap-2">
-                        <button onClick={() => openEdit(c)} className="text-blue-600 text-xs hover:underline">Edit</button>
-                        <button onClick={() => handleDelete(c.id)} className="text-red-500 text-xs hover:underline">Delete</button>
-                      </div>
-                    </TableTd>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="sm:hidden divide-y divide-gray-100">
+              {customers.map((c) => (
+                <div key={c.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{c.name}</p>
+                      {c.email && <p className="text-xs text-gray-500">{c.email}</p>}
+                      {c.phone && <p className="text-xs text-gray-500">{c.phone}</p>}
+                    </div>
+                    <div className="flex gap-3 ml-3">
+                      <button onClick={() => openEdit(c)} className="text-blue-600 text-sm hover:underline">Edit</button>
+                      <button onClick={() => handleDelete(c.id)} className="text-red-500 text-sm hover:underline">Delete</button>
+                    </div>
+                  </div>
+                  {c.address && <p className="text-xs text-gray-400 mt-1 truncate">{c.address}</p>}
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableTh>Name</TableTh>
+                    <TableTh>Email</TableTh>
+                    <TableTh>Phone</TableTh>
+                    <TableTh>Address</TableTh>
+                    <TableTh></TableTh>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {customers.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableTd className="font-medium">{c.name}</TableTd>
+                      <TableTd>{c.email ?? "—"}</TableTd>
+                      <TableTd>{c.phone ?? "—"}</TableTd>
+                      <TableTd>{c.address ?? "—"}</TableTd>
+                      <TableTd>
+                        <div className="flex gap-2">
+                          <button onClick={() => openEdit(c)} className="text-blue-600 text-xs hover:underline">Edit</button>
+                          <button onClick={() => handleDelete(c.id)} className="text-red-500 text-xs hover:underline">Delete</button>
+                        </div>
+                      </TableTd>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
