@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
-import { uploadPDF } from "@/lib/s3";
+import { uploadLogo } from "@/lib/s3";
 
 export async function POST(req: Request) {
   try {
@@ -13,9 +13,9 @@ export async function POST(req: Request) {
 
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    const allowedTypes = ["image/jpeg", "image/png"];
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "File type not allowed" }, { status: 400 });
+      return NextResponse.json({ error: "Only PNG and JPEG images are supported for logos" }, { status: 400 });
     }
 
     if (file.size > 5 * 1024 * 1024) {
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(arrayBuffer);
     const key = `logos/${session.user.id}/${Date.now()}-${file.name}`;
 
-    const url = await uploadPDF(key, buffer, file.type);
+    const url = await uploadLogo(key, buffer, file.type);
 
     return NextResponse.json({ success: true, data: { url } });
   } catch (error) {

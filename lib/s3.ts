@@ -15,6 +15,7 @@ const s3Client = new S3Client({
 });
 
 const BUCKET = process.env.AWS_BUCKET_NAME ?? "docdime-pdfs";
+const AWS_REGION = process.env.AWS_REGION ?? "us-east-1";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 function isS3Configured(): boolean {
@@ -61,4 +62,29 @@ export async function deletePDF(key: string): Promise<void> {
 
 export function getPDFKey(userId: string, docNumber: string): string {
   return `pdfs/${userId}/${docNumber}-${Date.now()}.pdf`;
+}
+
+// Upload a logo as a publicly readable object and return a permanent URL.
+// Logos must be accessible long-term (presigned URLs expire); PDFs use presigned URLs.
+export async function uploadLogo(
+  key: string,
+  buffer: Buffer | Uint8Array,
+  contentType: string
+): Promise<string> {
+  if (!isS3Configured()) {
+    const base64 = Buffer.from(buffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  }
+
+  const command = new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+  });
+
+  await s3Client.send(command);
+
+  // Return permanent public URL (bucket must allow public read on logos/*)
+  return `https://${BUCKET}.s3.${AWS_REGION}.amazonaws.com/${key}`;
 }
