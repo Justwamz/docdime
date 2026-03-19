@@ -136,7 +136,7 @@ export default function LandingPage() {
             <br />
             <span className="text-blue-600">Documents in Minutes</span>
           </h1>
-          <p className="mt-6 text-xl text-gray-500 max-w-2xl mx-auto">
+          <p className="mt-6 text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto">
             Create beautiful invoices, quotes, and purchase orders. Generate PDFs instantly.
             Built for SMEs across Africa and beyond.
           </p>
@@ -161,7 +161,7 @@ export default function LandingPage() {
       {/* Stats */}
       <section className="py-12 bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
             {[
               { value: "$0.11", label: "Per document" },
               { value: "$1/mo", label: "Pro plan" },
@@ -178,10 +178,10 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="features" className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Everything you need</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Everything you need</h2>
             <p className="mt-3 text-lg text-gray-500">
               All the tools to create, manage, and track your business documents.
             </p>
@@ -202,10 +202,10 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <section id="how-it-works" className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">How It Works</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">How It Works</h2>
             <p className="mt-3 text-lg text-gray-500">Up and running in 4 simple steps.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -223,10 +223,10 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="pricing" className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Simple Pricing</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Simple Pricing</h2>
             <p className="mt-3 text-lg text-gray-500">
               Pay per document or go Pro. No surprises.
             </p>
@@ -308,10 +308,10 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <section id="faq" className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900">Frequently Asked Questions</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Frequently Asked Questions</h2>
           </div>
           <div className="space-y-4">
             {faqs.map((faq) => (
@@ -325,9 +325,9 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600 text-white text-center">
+      <section className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 bg-blue-600 text-white text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold">Ready to get started?</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold">Ready to get started?</h2>
           <p className="mt-3 text-blue-100 text-lg">
             Join thousands of SMEs creating professional documents with DocDime.
           </p>
