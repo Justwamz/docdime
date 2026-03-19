@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         expiryDate: expiryDate ? new Date(expiryDate) : null,
         notes,
         terms,
-        currency: currency ?? "KES",
+        currency: currency ?? "USD",
         subtotal,
         taxAmount,
         total,

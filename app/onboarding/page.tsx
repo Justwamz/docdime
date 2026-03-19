@@ -22,8 +22,8 @@ export default function OnboardingPage() {
     businessEmail: "",
     businessPhone: "",
     businessAddress: "",
-    country: "KE",
-    currency: "KES",
+    country: "US",
+    currency: "USD",
     consentGiven: false,
   });
 
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
                     id="businessPhone"
                     value={form.businessPhone}
                     onChange={(e) => update2("businessPhone", e.target.value)}
-                    placeholder="+254 700 000 000"
+                    placeholder="+1 555 000 0000"
                   />
                 </div>
                 <div>
@@ -136,7 +136,7 @@ export default function OnboardingPage() {
                     id="businessAddress"
                     value={form.businessAddress}
                     onChange={(e) => update2("businessAddress", e.target.value)}
-                    placeholder="123 Main St, Nairobi"
+                    placeholder="123 Main St, City"
                   />
                 </div>
               </>

@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Revenue Collected",
-      value: formatCurrency(revenue._sum.total ?? 0, user?.currency ?? "KES"),
+      value: formatCurrency(revenue._sum.total ?? 0, user?.currency ?? "USD"),
       icon: "💰",
       color: "bg-green-50 text-green-700",
     },

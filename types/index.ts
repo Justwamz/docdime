@@ -103,7 +103,7 @@ export interface Tax {
 }
 
 export interface BankingDetails {
-  // Kenya (M-Pesa / Bank)
+  // Mobile money (e.g. M-Pesa)
   mpesaNumber?: string;
   bankName?: string;
   accountNumber?: string;

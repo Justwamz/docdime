@@ -84,7 +84,7 @@ function TaxSelector({
 export function LineItemsTable({
   items,
   onChange,
-  currency = "KES",
+  currency = "USD",
   taxes = [],
 }: LineItemsTableProps) {
   const addItem = () => {

@@ -38,7 +38,7 @@ export default function NewDocumentPage() {
     expiryDate: "",
     notes: "",
     terms: "",
-    currency: "KES",
+    currency: "USD",
   });
 
   useEffect(() => {
@@ -222,7 +222,7 @@ export default function NewDocumentPage() {
                 value={form.currency}
                 onChange={(e) => updateForm("currency", e.target.value)}
               >
-                {["KES", "NGN", "USD", "GBP", "EUR", "ZAR", "GHS"].map((c) => (
+                {["USD", "EUR", "GBP", "CAD", "AUD", "NGN", "KES", "ZAR", "GHS", "INR", "JPY", "CNY", "BRL", "MXN", "AED"].map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </Select>

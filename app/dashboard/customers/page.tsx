@@ -153,7 +153,7 @@ export default function CustomersPage() {
           </div>
           <div>
             <Label>Phone</Label>
-            <Input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+254 700 000 000" />
+            <Input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+1 555 000 0000" />
           </div>
           <div>
             <Label>Address</Label>

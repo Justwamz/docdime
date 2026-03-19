@@ -43,8 +43,8 @@ model User {
   businessPhone     String?
   businessAddress   String?
   businessLogo      String?
-  country           String    @default("KE")
-  currency          String    @default("KES")
+  country           String    @default("US")
+  currency          String    @default("USD")
   plan              Plan      @default(PAY_PER_USE)
   isAdmin           Boolean   @default(false)
   consentGiven      Boolean   @default(false)
@@ -106,7 +106,7 @@ model Document {
   subtotal        Float          @default(0)
   taxAmount       Float          @default(0)
   total           Float          @default(0)
-  currency        String         @default("KES")
+  currency        String         @default("USD")
   pdfUrl          String?
   paid            Boolean        @default(false)
   convertedFromId String?

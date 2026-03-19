@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(rm:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(node:*)",
+      "Bash(head:*)",
+      "Bash(__NEW_LINE_0ab07c0edefb70d0__ curl:*)",
+      "Bash(claude mcp:*)",
+      "Bash(env:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:api-docs.render.com)",
+      "WebFetch(domain:render.com)"
+    ]
+  }
+}

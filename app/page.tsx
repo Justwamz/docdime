@@ -103,7 +103,7 @@ const faqs = [
   },
   {
     q: "What payment methods are accepted?",
-    a: "We accept all major cards and mobile money via Paystack (Visa, Mastercard, M-Pesa, and more).",
+    a: "We accept all major cards and mobile money via Paystack (Visa, Mastercard and more).",
   },
   {
     q: "Can I cancel my Pro plan?",

@@ -23,8 +23,8 @@ export default function SettingsPage() {
     businessEmail: "",
     businessPhone: "",
     businessAddress: "",
-    country: "KE",
-    currency: "KES",
+    country: "US",
+    currency: "USD",
     businessLogo: "",
   });
   const [logoUploading, setLogoUploading] = useState(false);
@@ -40,8 +40,8 @@ export default function SettingsPage() {
           businessEmail: d.data.businessEmail ?? "",
           businessPhone: d.data.businessPhone ?? "",
           businessAddress: d.data.businessAddress ?? "",
-          country: d.data.country ?? "KE",
-          currency: d.data.currency ?? "KES",
+          country: d.data.country ?? "US",
+          currency: d.data.currency ?? "USD",
           businessLogo: d.data.businessLogo ?? "",
         });
         if (d.data.bankingDetails) setBanking(d.data.bankingDetails);
