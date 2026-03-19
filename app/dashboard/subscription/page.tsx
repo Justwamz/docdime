@@ -111,28 +111,44 @@ export default async function SubscriptionPage() {
         <Card>
           <CardHeader><CardTitle>Payment History</CardTitle></CardHeader>
           <CardContent className="p-0">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
-                <tr>
-                  <th className="px-4 py-3 text-left">Date</th>
-                  <th className="px-4 py-3 text-left">Type</th>
-                  <th className="px-4 py-3 text-left">Amount</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {transactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-600">{formatDate(t.createdAt)}</td>
-                    <td className="px-4 py-3 text-gray-600">{t.type}</td>
-                    <td className="px-4 py-3 font-medium">${t.amount.toFixed(2)}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant="success">Paid</Badge>
-                    </td>
+            <div className="sm:hidden divide-y divide-gray-100">
+              {transactions.map((t) => (
+                <div key={t.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-sm text-gray-900">{t.type}</p>
+                    <p className="text-xs text-gray-400">{formatDate(t.createdAt)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">${t.amount.toFixed(2)}</p>
+                    <Badge variant="success">Paid</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:block">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Date</th>
+                    <th className="px-4 py-3 text-left">Type</th>
+                    <th className="px-4 py-3 text-left">Amount</th>
+                    <th className="px-4 py-3 text-left">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {transactions.map((t) => (
+                    <tr key={t.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-gray-600">{formatDate(t.createdAt)}</td>
+                      <td className="px-4 py-3 text-gray-600">{t.type}</td>
+                      <td className="px-4 py-3 font-medium">${t.amount.toFixed(2)}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant="success">Paid</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}

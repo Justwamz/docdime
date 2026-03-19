@@ -134,7 +134,7 @@ export default function SettingsPage() {
       )}
 
       <Tabs defaultValue="profile">
-        <TabsList>
+        <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="profile">Business Profile</TabsTrigger>
           <TabsTrigger value="banking">Banking</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
@@ -147,7 +147,7 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 <div>
                   <Label>Business Logo</Label>
-                  <div className="flex items-center gap-4 mt-1">
+                  <div className="flex items-center gap-4 mt-1 flex-wrap">
                     {profile.businessLogo ? (
                       <img
                         src={profile.businessLogo}
@@ -205,7 +205,7 @@ export default function SettingsPage() {
                   <Label>Business Address</Label>
                   <Textarea value={profile.businessAddress} onChange={(e) => setProfile((p) => ({ ...p, businessAddress: e.target.value }))} rows={2} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Country</Label>
                     <Select value={profile.country} onChange={(e) => setProfile((p) => ({ ...p, country: e.target.value }))}>
