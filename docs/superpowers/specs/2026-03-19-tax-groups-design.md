@@ -7,7 +7,7 @@
 
 Replace the current `isCompound` flag on individual taxes with a Tax Groups system. A Tax Group is an ordered collection of individual taxes where compound behavior is defined per step in the group, not on the tax itself. This matches how professional accounting software (Xero, QuickBooks, Wave) handles complex multi-tax scenarios globally.
 
-Individual taxes become simple building blocks (name, rate, inclusive/exclusive). Tax Groups define the order and compound rules for combining them. A line item takes one selection — either an individual tax or a group.
+Individual taxes become simple building blocks (name, rate, inclusive/exclusive). Tax Groups define the order and compound rules for combining them. A line item takes one selection — either an individual tax or a tax group (not mixed).
 
 ---
 
@@ -19,15 +19,15 @@ Remove `isCompound`. A tax is only a rate and an inclusive/exclusive flag.
 
 ```prisma
 model Tax {
-  id          String         @id @default(cuid())
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  rate        Float
-  isDefault   Boolean        @default(false)
-  isInclusive Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  rate          Float
+  isDefault     Boolean        @default(false)
+  isInclusive   Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   taxGroupItems TaxGroupItem[]
 }
@@ -51,7 +51,7 @@ model TaxGroup {
 
 ### `TaxGroupItem` (new)
 
-Joins a group to a tax. `order` is 1-based. `isCompound` determines whether this step applies on the running total (base + all previous non-inclusive amounts) or just the base.
+Joins a group to a tax. `order` is 1-based. `isCompound` determines whether this step applies on the running total (base + all previous non-inclusive amounts) or just the base. `isCompound` is silently ignored when the referenced tax is inclusive (inclusive taxes are always extracted from base regardless).
 
 ```prisma
 model TaxGroupItem {
@@ -59,46 +59,101 @@ model TaxGroupItem {
   groupId    String
   group      TaxGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   taxId      String
-  tax        Tax       @relation(fields: [taxId], references: [id], onDelete: Cascade)
+  tax        Tax       @relation(fields: [taxId], references: [id], onDelete: Restrict)
   order      Int
   isCompound Boolean   @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
   @@unique([groupId, order])
+  @@unique([groupId, taxId])
 }
 ```
 
-### `LineItem.appliedTaxes` JSON shape (updated)
+**Note on `onDelete: Restrict`:** Deleting a `Tax` that is used in one or more groups is blocked at the DB level. The `DELETE /api/taxes/[id]` route must catch this constraint error and return HTTP 409 with a message listing the group names that reference this tax. The user must remove the tax from those groups first.
 
-The `appliedTaxes` JSON column stores a snapshot at document creation time. Two variants:
+**Note on `@@unique([groupId, taxId])`:** Prevents the same tax appearing more than once in a group. The API returns 400 if a duplicate taxId appears in the items array.
 
-**Individual tax:**
-```json
-{
-  "type": "tax",
-  "taxId": "cuid",
-  "name": "VAT",
-  "rate": 16,
-  "isInclusive": false,
-  "amount": 16.00
+### `User` (relation update)
+
+Add the `taxGroups` relation to the existing `User` model:
+
+```prisma
+model User {
+  // ...existing fields unchanged...
+  taxes        Tax[]
+  taxGroups    TaxGroup[]   // add this line
+  // ...other relations...
 }
 ```
 
-**Tax group:**
-```json
-{
-  "type": "group",
-  "groupId": "cuid",
-  "groupName": "Telecom Tax",
-  "items": [
-    { "taxId": "cuid", "name": "Excise Duty", "rate": 15, "isInclusive": false, "isCompound": false, "amount": 15.00 },
-    { "taxId": "cuid", "name": "VAT", "rate": 16, "isInclusive": false, "isCompound": true, "amount": 18.40 }
-  ]
+### `LineItem.appliedTaxes` — TypeScript type definition
+
+The `appliedTaxes` JSON column shape changes from `AppliedTax[]` (flat array) to a discriminated union. The TypeScript definition in `types/index.ts`:
+
+```ts
+export interface AppliedTax {
+  taxId: string
+  name: string
+  rate: number
+  isInclusive: boolean
+  isCompound: boolean   // always false for individual tax selection
+  amount: number
+}
+
+export type AppliedTaxSnapshot =
+  | {
+      type: "tax"
+      taxId: string
+      name: string
+      rate: number
+      isInclusive: boolean
+      amount: number
+    }
+  | {
+      type: "group"
+      groupId: string
+      groupName: string
+      items: AppliedTax[]
+    }
+
+// LineItem updated:
+export interface LineItem {
+  description: string
+  quantity: number
+  unitPrice: number
+  taxRate: number           // effective rate, for display only
+  appliedTaxes?: AppliedTaxSnapshot | null
+  total: number
 }
 ```
 
-Snapshotting ensures existing documents are unaffected if tax rates change after creation.
+### Migration for existing documents
+
+Existing `LineItem` records have `appliedTaxes` stored as `AppliedTax[]` (the old flat array format, e.g. `[{ taxId, name, rate, isCompound, isInclusive, amount }]`). A Prisma data migration script (`prisma/migrations/migrate-applied-taxes.ts`) must:
+
+1. Fetch all `LineItem` records where `appliedTaxes IS NOT NULL`
+2. For each record, check if `appliedTaxes` is an array (old format) or has a `type` field (new format)
+3. If old format: wrap as `{ type: "tax", taxId: items[0].taxId, name: items[0].name, rate: items[0].rate, isInclusive: items[0].isInclusive, amount: items[0].amount }` for single-item arrays, or as `{ type: "group", groupId: "__legacy__", groupName: "Legacy Taxes", items: [...] }` for multi-item arrays
+4. Write back the transformed value
+
+A backward-compatible reader utility is also provided in `lib/utils.ts`:
+
+```ts
+export function readAppliedTaxes(raw: unknown): AppliedTaxSnapshot | null {
+  if (!raw) return null
+  if (Array.isArray(raw)) {
+    // Legacy format: flat array
+    const items = raw as AppliedTax[]
+    if (items.length === 0) return null
+    if (items.length === 1) return { type: "tax", taxId: items[0].taxId, name: items[0].name, rate: items[0].rate, isInclusive: items[0].isInclusive, amount: items[0].amount }
+    return { type: "group", groupId: "__legacy__", groupName: "Legacy Taxes", items }
+  }
+  return raw as AppliedTaxSnapshot
+}
+```
+
+This ensures all existing documents render correctly without a required data migration, and the data migration can be run separately as a cleanup step.
 
 ---
 
@@ -107,12 +162,12 @@ Snapshotting ensures existing documents are unaffected if tax rates change after
 Tax names are always rendered as auto-generated display labels everywhere (tables, dropdowns, PDF):
 
 ```ts
-function taxLabel(tax: { name: string; rate: number; isInclusive: boolean }): string {
-  return `${tax.name} ${tax.rate}% (${tax.isInclusive ? "Inclusive" : "Exclusive"})`;
+export function taxLabel(tax: { name: string; rate: number; isInclusive: boolean }): string {
+  return `${tax.name} ${tax.rate}% (${tax.isInclusive ? "Inclusive" : "Exclusive"})`
 }
 ```
 
-This allows a user to have both "VAT 16% (Inclusive)" and "VAT 16% (Exclusive)" as distinct selectable options with no naming ambiguity.
+This allows a user to have both "VAT 16% (Inclusive)" and "VAT 16% (Exclusive)" as distinct selectable options with no naming ambiguity. Applied everywhere: taxes table, tax group builder, line item dropdown, applied tax breakdown, PDF.
 
 ---
 
@@ -125,7 +180,12 @@ This allows a user to have both "VAT 16% (Inclusive)" and "VAT 16% (Exclusive)" 
 | GET | `/api/taxes` | No change |
 | POST | `/api/taxes` | Remove `isCompound` field |
 | PUT | `/api/taxes/[id]` | Remove `isCompound` field |
-| DELETE | `/api/taxes/[id]` | No change |
+| DELETE | `/api/taxes/[id]` | Return 409 with group names if tax is used in any group |
+
+**DELETE `/api/taxes/[id]` conflict response:**
+```json
+{ "error": "This tax is used in the following groups: Telecom Tax, Standard Rates. Remove it from those groups first." }
+```
 
 ### Tax Groups (new)
 
@@ -133,10 +193,10 @@ This allows a user to have both "VAT 16% (Inclusive)" and "VAT 16% (Exclusive)" 
 |--------|-------|-------------|
 | GET | `/api/tax-groups` | Returns all groups with items + tax details embedded |
 | POST | `/api/tax-groups` | Create group: `{ name, isDefault, items: [{ taxId, order, isCompound }] }` |
-| PUT | `/api/tax-groups/[id]` | Full replace — group name + items array |
+| PUT | `/api/tax-groups/[id]` | Full replace (see semantics below) |
 | DELETE | `/api/tax-groups/[id]` | Cascades to items |
 
-The GET response embeds full tax detail in each item so the client doesn't need a second request:
+**GET response shape:**
 ```json
 {
   "id": "...",
@@ -149,40 +209,56 @@ The GET response embeds full tax detail in each item so the client doesn't need 
 }
 ```
 
+**PUT full replace semantics:** The implementation must delete all existing `TaxGroupItem` records for the group inside a transaction, then insert the new items array. This avoids partial-update bugs. The group name and `isDefault` are also updated in the same transaction.
+
+**POST/PUT validation:**
+- `items` array must have at least 1 entry → 400 "A group must have at least one tax"
+- Duplicate `taxId` in items array → 400 "A tax cannot appear more than once in a group"
+- `isDefault: true` → clear all other `TaxGroup.isDefault` for this user (same pattern as Tax)
+
+### `isDefault` coordination rule
+
+`Tax.isDefault` and `TaxGroup.isDefault` are independent. Setting a group as default does not clear individual tax defaults, and vice versa. When a new line item is added, the UI pre-selects whichever is marked default — if both exist, the group default takes precedence (groups are the primary recommended mechanism). If neither is set, the line item starts with no tax selected.
+
 ---
 
 ## 4. Calculation Logic
 
-`computeLineTaxes` in `lib/utils.ts` is updated to accept a unified input and always returns the same output shape.
+`computeLineTaxes` in `lib/utils.ts` is updated to accept a unified input and always returns the same output shape. The function remains pure (no DB calls) so it works identically on the client (live preview) and server (document save).
 
 ### Input union type
 
 ```ts
 type TaxSelection =
   | { type: "tax"; taxId: string; name: string; rate: number; isInclusive: boolean }
-  | { type: "group"; groupId: string; groupName: string; items: Array<{ taxId: string; name: string; rate: number; isInclusive: boolean; isCompound: boolean }> }
+  | {
+      type: "group"
+      groupId: string
+      groupName: string
+      items: Array<{ taxId: string; name: string; rate: number; isInclusive: boolean; isCompound: boolean }>
+    }
 ```
 
-### Calculation order (same logic, now explicit per step)
+For an individual tax input, it is internally normalized to a single-item group with `isCompound: false` before calculation. This keeps the calculation logic to one path.
 
-For each step in order:
-1. **Inclusive** — extracted from base: `amount = base × rate / (100 + rate)`
-2. **Exclusive, not compound** — applied on base: `amount = base × rate / 100`
-3. **Exclusive, compound** — applied on running total: `amount = (base + runningExclusiveSum) × rate / 100`
+### Calculation order (applied to items in `order` sequence)
 
-`runningExclusiveSum` accumulates non-inclusive amounts as steps are processed in order.
+For each step:
+1. **Inclusive** — extracted from base: `amount = base × rate / (100 + rate)`. `isCompound` is ignored for inclusive taxes.
+2. **Exclusive, not compound** — applied on base: `amount = base × rate / 100`. Accumulates into `runningExclusiveSum`.
+3. **Exclusive, compound** — applied on running total: `amount = (base + runningExclusiveSum) × rate / 100`. Accumulates into `runningExclusiveSum`.
 
 ### Output
 
 ```ts
 {
-  totalTax: number        // net tax to add (exclusive taxes) or 0 for inclusive
-  effectiveRate: number   // for display only
-  snapshot: AppliedTaxes  // persisted in LineItem.appliedTaxes
+  totalTax: number        // sum of all exclusive tax amounts (inclusive taxes are extracted, not added)
+  effectiveRate: number   // (totalTax / base) × 100 — exclusive taxes only, for display
+  snapshot: AppliedTaxSnapshot
 }
 ```
 
-The function remains pure (no DB calls) so it works identically on the client (live preview) and server (document save).
+**`effectiveRate` note:** For a group containing both inclusive and exclusive taxes, `effectiveRate` only reflects the exclusive portion (the amount added to the total). This is the correct value for the `LineItem.taxRate` column and is consistent with how the existing implementation works. The PDF must use the per-component `amount` values from the snapshot for accurate breakdown display, not `effectiveRate`.
 
 ---
 
@@ -191,28 +267,33 @@ The function remains pure (no DB calls) so it works identically on the client (l
 ### Taxes Page (simplified)
 
 - **Form:** name, rate, inclusive/exclusive toggle, default toggle. No compound toggle.
-- **Table columns:** Display label (auto-generated), Default badge, Edit / Delete actions.
+- **Table columns:** Display label (auto-generated via `taxLabel()`), Default badge, Edit / Delete actions.
+- **Delete:** If the tax is used in a group, show an inline error message instead of deleting.
 
 ### Tax Groups (new section on same page, below taxes table)
 
 - "+ Add Group" button opens a dialog.
 - **Group builder dialog:**
-  - Group name field
+  - Group name field (required)
   - Ordered list of steps. Each step:
-    - Tax picker dropdown (shows display labels of all user taxes)
-    - "Apply on running total" toggle (the `isCompound` flag for this step)
-    - Up/Down arrows to reorder; remove button
+    - Tax picker dropdown showing `taxLabel()` display labels for all user taxes
+    - "Apply on running total" toggle (the `isCompound` flag for this step) — **disabled and unchecked when the selected tax is inclusive** (inclusive taxes are always extracted from base; compound has no meaning)
+    - Up/Down buttons to reorder; remove button
   - "+ Add Step" button
-  - **Live preview panel:** shows calculation for a 100-unit base, updating as steps change
-- **Group list:** group name, member taxes as chips, default badge, edit/delete
+  - Validation: at least 1 step required before saving
+  - **Live preview panel:** displays a table showing each step's name, rate type, and computed tax amount for a dimensionless base of 100. No currency symbol — just plain numbers (e.g. "Excise Duty: 15.00", "VAT: 18.40", "Total tax: 33.40"). Labeled "Preview (base = 100)". Updates live as steps change.
+  - `order` values are always compacted to sequential integers (1, 2, 3, ...) when saving, regardless of UI reordering or step deletion.
+- **Group list:** group name, member taxes as display label chips, default badge, edit/delete.
+- **Default toggle:** setting a group as default is independent of the individual tax default. If both are set, the group takes precedence in the line item selector.
 
 ### Line Item Tax Selector (replaces multi-checkbox)
 
 - Single dropdown. Two labeled sections:
-  - **Individual Taxes** — lists each tax by display label
-  - **Tax Groups** — lists each group by name
-- After selection, a small breakdown beneath the cell shows each component and its computed amount.
-- Selecting "None" clears the tax.
+  - **Individual Taxes** — lists each tax by `taxLabel()` display label
+  - **Tax Groups** — lists each group by group name
+- After selection, a small breakdown beneath the cell shows each component and its computed amount (formatted in the document currency).
+- "None" option at the top clears the tax selection.
+- On page load, pre-select the default group (if set), else the default individual tax (if set), else no tax.
 
 ---
 
@@ -220,16 +301,18 @@ The function remains pure (no DB calls) so it works identically on the client (l
 
 | File | Change |
 |------|--------|
-| `prisma/schema.prisma` | Remove `isCompound` from Tax; add TaxGroup, TaxGroupItem models |
-| `lib/utils.ts` | Refactor `computeLineTaxes` to accept unified TaxSelection input |
-| `types/index.ts` | Add TaxGroup, TaxGroupItem, update AppliedTaxes shape |
-| `app/api/taxes/route.ts` | Remove isCompound from POST |
-| `app/api/taxes/[id]/route.ts` | Remove isCompound from PUT |
+| `prisma/schema.prisma` | Remove `isCompound` from Tax; add TaxGroup, TaxGroupItem; add `taxGroups` relation to User |
+| `lib/utils.ts` | Refactor `computeLineTaxes` to accept unified `TaxSelection` input; add `taxLabel()` helper; add `readAppliedTaxes()` backward-compat reader |
+| `types/index.ts` | Add TaxGroup, TaxGroupItem types; replace `AppliedTax[]` on LineItem with `AppliedTaxSnapshot` discriminated union |
+| `app/api/taxes/route.ts` | Remove `isCompound` from POST |
+| `app/api/taxes/[id]/route.ts` | Remove `isCompound` from PUT; return 409 with group names on DELETE conflict |
 | `app/api/tax-groups/route.ts` | New: GET, POST |
-| `app/api/tax-groups/[id]/route.ts` | New: PUT, DELETE |
-| `app/dashboard/taxes/page.tsx` | Remove compound toggle; add Tax Groups section |
-| `components/documents/line-items-table.tsx` | Replace multi-checkbox TaxSelector with single dropdown |
-| `app/dashboard/documents/new/page.tsx` | Pass groups to LineItemsTable |
+| `app/api/tax-groups/[id]/route.ts` | New: PUT (full replace in transaction), DELETE |
+| `app/dashboard/taxes/page.tsx` | Remove compound toggle; add Tax Groups section with group builder dialog |
+| `components/documents/line-items-table.tsx` | Replace multi-checkbox `TaxSelector` with single dropdown accepting both taxes and groups |
+| `app/dashboard/documents/new/page.tsx` | Fetch both `/api/taxes` and `/api/tax-groups`; pass both to `LineItemsTable` |
+| `lib/pdf.ts` | Update totals section to render per-component tax breakdown from `appliedTaxes` snapshot (e.g. "Excise Duty: $15.00", "VAT: $18.40") instead of a single "Tax" line |
+| `prisma/migrations/migrate-applied-taxes.ts` | Optional cleanup script to transform old `AppliedTax[]` format to new `AppliedTaxSnapshot` format |
 
 ---
 
