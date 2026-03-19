@@ -137,16 +137,22 @@ export function LineItemsTable({
 
   function recalcWithTaxes(item: LineItem & { _selectedTaxes?: Tax[]; _selectedTaxIds?: string[] }, selectedTaxes: Tax[]): LineItem {
     const base = item.quantity * item.unitPrice;
-    const taxInput = selectedTaxes.map((t) => ({
+    const taxItems = selectedTaxes.map((t) => ({
       taxId: t.id,
       name: t.name,
       rate: t.rate,
       isCompound: false, // TODO Task 7: isCompound comes from TaxGroupItem, not Tax
       isInclusive: t.isInclusive,
     }));
-    const { breakdown, totalTax, effectiveRate } = computeLineTaxes(base, taxInput);
-    const snapshot = breakdown.length > 0
-      ? { type: "group" as const, groupId: "", groupName: "", items: breakdown }
+    const selection: import("@/types").TaxSelection = {
+      type: "group",
+      groupId: "",
+      groupName: "",
+      items: taxItems,
+    };
+    const { snapshot: rawSnapshot, totalTax, effectiveRate } = computeLineTaxes(base, selection);
+    const snapshot = rawSnapshot && rawSnapshot.type === "group" && rawSnapshot.items.length > 0
+      ? rawSnapshot
       : null;
     return {
       description: item.description,
