@@ -26,7 +26,7 @@ export default function NewDocumentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
-  const [taxes, setTaxes] = useState<Array<{ id: string; name: string; rate: number }>>([]);
+  const [taxes, setTaxes] = useState<Array<{ id: string; name: string; rate: number; isDefault: boolean; isInclusive: boolean; isCompound: boolean }>>([]);
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unitPrice: 0, taxRate: 0, total: 0 },
   ]);

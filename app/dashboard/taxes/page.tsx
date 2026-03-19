@@ -14,6 +14,8 @@ interface Tax {
   name: string;
   rate: number;
   isDefault: boolean;
+  isInclusive: boolean;
+  isCompound: boolean;
 }
 
 export default function TaxesPage() {
@@ -21,7 +23,7 @@ export default function TaxesPage() {
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [editTax, setEditTax] = useState<Tax | null>(null);
-  const [form, setForm] = useState({ name: "", rate: "", isDefault: false });
+  const [form, setForm] = useState({ name: "", rate: "", isDefault: false, isInclusive: false, isCompound: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -38,14 +40,14 @@ export default function TaxesPage() {
 
   function openCreate() {
     setEditTax(null);
-    setForm({ name: "", rate: "", isDefault: false });
+    setForm({ name: "", rate: "", isDefault: false, isInclusive: false, isCompound: false });
     setError("");
     setShowDialog(true);
   }
 
   function openEdit(tax: Tax) {
     setEditTax(tax);
-    setForm({ name: tax.name, rate: String(tax.rate), isDefault: tax.isDefault });
+    setForm({ name: tax.name, rate: String(tax.rate), isDefault: tax.isDefault, isInclusive: tax.isInclusive, isCompound: tax.isCompound });
     setError("");
     setShowDialog(true);
   }
@@ -96,6 +98,7 @@ export default function TaxesPage() {
                 <tr>
                   <TableTh>Name</TableTh>
                   <TableTh>Rate</TableTh>
+                  <TableTh>Type</TableTh>
                   <TableTh>Default</TableTh>
                   <TableTh></TableTh>
                 </tr>
@@ -105,6 +108,16 @@ export default function TaxesPage() {
                   <TableRow key={t.id}>
                     <TableTd className="font-medium">{t.name}</TableTd>
                     <TableTd>{t.rate}%</TableTd>
+                    <TableTd>
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`text-xs px-1.5 py-0.5 rounded w-fit ${t.isInclusive ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
+                          {t.isInclusive ? "Inclusive" : "Exclusive"}
+                        </span>
+                        {t.isCompound && (
+                          <span className="text-xs px-1.5 py-0.5 rounded w-fit bg-orange-100 text-orange-700">Compound</span>
+                        )}
+                      </div>
+                    </TableTd>
                     <TableTd>{t.isDefault ? "✓ Default" : "—"}</TableTd>
                     <TableTd>
                       <div className="flex gap-2">
@@ -130,6 +143,25 @@ export default function TaxesPage() {
           <div>
             <Label required>Rate (%)</Label>
             <Input type="number" value={form.rate} onChange={(e) => setForm((p) => ({ ...p, rate: e.target.value }))} placeholder="16" min="0" max="100" step="0.01" required />
+          </div>
+          <div className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Tax Behaviour</p>
+            <div className="flex items-start gap-3">
+              <Switch checked={form.isInclusive} onCheckedChange={(v) => setForm((p) => ({ ...p, isInclusive: v, isCompound: v ? false : p.isCompound }))} />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Tax Inclusive</p>
+                <p className="text-xs text-gray-500">Tax is already included in the unit price (extracted, not added)</p>
+              </div>
+            </div>
+            {!form.isInclusive && (
+              <div className="flex items-start gap-3">
+                <Switch checked={form.isCompound} onCheckedChange={(v) => setForm((p) => ({ ...p, isCompound: v }))} />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Compound Tax</p>
+                  <p className="text-xs text-gray-500">Applied on (base + all non-compound taxes). e.g. VAT on excise-inclusive amount</p>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <Switch checked={form.isDefault} onCheckedChange={(v) => setForm((p) => ({ ...p, isDefault: v }))} />

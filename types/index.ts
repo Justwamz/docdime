@@ -42,12 +42,22 @@ export type DocumentStatus =
   | "CANCELLED";
 export type Plan = "PAY_PER_USE" | "PRO";
 
+export interface AppliedTax {
+  taxId: string;
+  name: string;
+  rate: number;
+  isCompound: boolean;
+  isInclusive: boolean;
+  amount: number;
+}
+
 export interface LineItem {
   id?: string;
   description: string;
   quantity: number;
   unitPrice: number;
-  taxRate: number;
+  taxRate: number;        // effective combined rate (for display/PDF)
+  appliedTaxes?: AppliedTax[];
   total: number;
 }
 
@@ -88,6 +98,8 @@ export interface Tax {
   name: string;
   rate: number;
   isDefault: boolean;
+  isInclusive: boolean;
+  isCompound: boolean;
 }
 
 export interface BankingDetails {

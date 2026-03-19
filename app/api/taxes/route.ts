@@ -24,12 +24,11 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name, rate, isDefault } = await req.json();
+    const { name, rate, isDefault, isInclusive, isCompound } = await req.json();
     if (!name || rate === undefined) {
       return NextResponse.json({ error: "Name and rate are required" }, { status: 400 });
     }
 
-    // If setting as default, unset others
     if (isDefault) {
       await prisma.tax.updateMany({
         where: { userId: session.user.id },
@@ -38,7 +37,14 @@ export async function POST(req: Request) {
     }
 
     const tax = await prisma.tax.create({
-      data: { userId: session.user.id, name, rate: parseFloat(rate), isDefault: isDefault ?? false },
+      data: {
+        userId: session.user.id,
+        name,
+        rate: parseFloat(rate),
+        isDefault: isDefault ?? false,
+        isInclusive: isInclusive ?? false,
+        isCompound: isCompound ?? false,
+      },
     });
 
     return NextResponse.json({ success: true, data: tax }, { status: 201 });

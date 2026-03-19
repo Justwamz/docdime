@@ -77,14 +77,16 @@ model Customer {
 }
 
 model Tax {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  rate      Float
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  rate        Float
+  isDefault   Boolean  @default(false)
+  isInclusive Boolean  @default(false)
+  isCompound  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Document {
@@ -123,8 +125,9 @@ model LineItem {
   description String
   quantity    Float    @default(1)
   unitPrice   Float    @default(0)
-  taxRate     Float    @default(0)
-  total       Float    @default(0)
+  taxRate      Float    @default(0)
+  appliedTaxes Json?
+  total        Float    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

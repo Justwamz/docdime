@@ -8,7 +8,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name, rate, isDefault } = await req.json();
+    const { name, rate, isDefault, isInclusive, isCompound } = await req.json();
 
     const tax = await prisma.tax.findFirst({ where: { id: params.id, userId: session.user.id } });
     if (!tax) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -19,7 +19,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const updated = await prisma.tax.update({
       where: { id: params.id },
-      data: { name, rate: parseFloat(rate), isDefault: isDefault ?? false },
+      data: {
+        name,
+        rate: parseFloat(rate),
+        isDefault: isDefault ?? false,
+        isInclusive: isInclusive ?? false,
+        isCompound: isCompound ?? false,
+      },
     });
 
     return NextResponse.json({ success: true, data: updated });
