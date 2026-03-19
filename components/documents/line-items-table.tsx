@@ -1,97 +1,192 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/utils";
-import { computeLineTaxes } from "@/lib/utils";
-import type { AppliedTax, LineItem, Tax } from "@/types";
+import { formatCurrency, taxLabel, computeLineTaxes } from "@/lib/utils";
+import type { LineItem, Tax, TaxGroup, TaxSelection, AppliedTaxSnapshot } from "@/types";
 
 interface LineItemsTableProps {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
   currency?: string;
   taxes?: Tax[];
+  taxGroups?: TaxGroup[];
 }
 
-function TaxSelector({
-  allTaxes,
-  selectedIds,
-  onChange,
-}: {
-  allTaxes: Tax[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
-}) {
-  const [open, setOpen] = useState(false);
+// ---------------------------------------------------------------------------
+// TaxDropdown
+// ---------------------------------------------------------------------------
 
-  const toggle = (id: string) => {
-    onChange(
-      selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]
-    );
-  };
+interface TaxDropdownProps {
+  taxes: Tax[];
+  taxGroups: TaxGroup[];
+  value: string; // "", "tax:{id}", or "group:{id}"
+  onChange: (key: string) => void;
+  base: number;
+}
 
-  const label =
-    selectedIds.length === 0
-      ? "No tax"
-      : allTaxes
-          .filter((t) => selectedIds.includes(t.id))
-          .map((t) => t.name)
-          .join(", ");
-
+function TaxDropdown({ taxes, taxGroups, value, onChange }: TaxDropdownProps) {
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full text-left rounded-lg border border-gray-300 px-2 py-2 text-sm bg-white truncate"
-      >
-        {label}
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute z-20 mt-1 w-56 bg-white rounded-xl border border-gray-200 shadow-lg p-2 space-y-1">
-            {allTaxes.length === 0 && (
-              <p className="text-xs text-gray-400 px-2 py-1">No taxes configured</p>
-            )}
-            {allTaxes.map((tax) => (
-              <label key={tax.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(tax.id)}
-                  onChange={() => toggle(tax.id)}
-                  className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600"
-                />
-                <span className="text-sm flex-1">{tax.name}</span>
-                <span className="text-xs text-gray-400">{tax.rate}%{tax.isInclusive ? " incl." : ""}</span>
-              </label>
-            ))}
-            <button
-              type="button"
-              onClick={() => { onChange([]); setOpen(false); }}
-              className="w-full text-left text-xs text-gray-400 px-2 py-1 hover:text-red-500"
-            >
-              Clear
-            </button>
-          </div>
-        </>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full rounded-lg border border-gray-300 px-2 py-2 text-sm bg-white"
+    >
+      <option value="">None</option>
+
+      {taxes.length > 0 && (
+        <optgroup label="Individual Taxes">
+          {taxes.map((t) => (
+            <option key={t.id} value={`tax:${t.id}`}>
+              {taxLabel(t)}
+            </option>
+          ))}
+        </optgroup>
       )}
-    </div>
+
+      {taxGroups.length > 0 && (
+        <optgroup label="Tax Groups">
+          {taxGroups.map((g) => (
+            <option key={g.id} value={`group:${g.id}`}>
+              {g.name}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </select>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Derive the selection key stored on a line item's appliedTaxes snapshot. */
+function selectionKeyFromItem(item: LineItem): string {
+  if (!item.appliedTaxes) return "";
+  if (item.appliedTaxes.type === "tax") return `tax:${item.appliedTaxes.taxId}`;
+  if (item.appliedTaxes.type === "group" && item.appliedTaxes.groupId !== "__legacy__") {
+    return `group:${item.appliedTaxes.groupId}`;
+  }
+  return "";
+}
+
+/** Build a TaxSelection from a selection key, using the available taxes/groups. */
+function buildSelection(
+  key: string,
+  taxes: Tax[],
+  taxGroups: TaxGroup[]
+): TaxSelection | null {
+  if (!key) return null;
+
+  if (key.startsWith("tax:")) {
+    const id = key.slice(4);
+    const tax = taxes.find((t) => t.id === id);
+    if (!tax) return null;
+    return {
+      type: "tax",
+      taxId: tax.id,
+      name: tax.name,
+      rate: tax.rate,
+      isInclusive: tax.isInclusive,
+    };
+  }
+
+  if (key.startsWith("group:")) {
+    const id = key.slice(6);
+    const group = taxGroups.find((g) => g.id === id);
+    if (!group) return null;
+    return {
+      type: "group",
+      groupId: group.id,
+      groupName: group.name,
+      items: group.items.map((item) => ({
+        taxId: item.taxId,
+        name: item.tax.name,
+        rate: item.tax.rate,
+        isInclusive: item.tax.isInclusive,
+        isCompound: item.isCompound,
+      })),
+    };
+  }
+
+  return null;
+}
+
+/** Recalculate totals for a line item given a selection key. */
+function recalcItem(
+  item: LineItem,
+  key: string,
+  taxes: Tax[],
+  taxGroups: TaxGroup[]
+): LineItem {
+  const base = item.quantity * item.unitPrice;
+  const selection = buildSelection(key, taxes, taxGroups);
+
+  if (!selection) {
+    return {
+      ...item,
+      taxRate: 0,
+      appliedTaxes: null,
+      total: base,
+    };
+  }
+
+  const { snapshot, totalTax, effectiveRate } = computeLineTaxes(base, selection);
+
+  // For a group snapshot with no items (empty group), treat as no tax.
+  const resolvedSnapshot: AppliedTaxSnapshot | null =
+    snapshot.type === "group" && snapshot.items.length === 0 ? null : snapshot;
+
+  return {
+    ...item,
+    taxRate: Math.round(effectiveRate * 100) / 100,
+    appliedTaxes: resolvedSnapshot,
+    total: base + totalTax,
+  };
+}
+
+/** Determine the default selection key (group > tax > none). */
+function defaultSelectionKey(taxes: Tax[], taxGroups: TaxGroup[]): string {
+  const defaultGroup = taxGroups.find((g) => g.isDefault);
+  if (defaultGroup) return `group:${defaultGroup.id}`;
+  const defaultTax = taxes.find((t) => t.isDefault);
+  if (defaultTax) return `tax:${defaultTax.id}`;
+  return "";
+}
+
+// ---------------------------------------------------------------------------
+// LineItemsTable
+// ---------------------------------------------------------------------------
 
 export function LineItemsTable({
   items,
   onChange,
   currency = "USD",
   taxes = [],
+  taxGroups = [],
 }: LineItemsTableProps) {
+  const hasTaxOptions = taxes.length > 0 || taxGroups.length > 0;
+
+  const defaultKey = useMemo(
+    () => defaultSelectionKey(taxes, taxGroups),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [taxes.map((t) => t.id).join(","), taxGroups.map((g) => g.id).join(",")]
+  );
+
   const addItem = () => {
-    onChange([
-      ...items,
-      { description: "", quantity: 1, unitPrice: 0, taxRate: 0, appliedTaxes: null, total: 0 },
-    ]);
+    const base = 0;
+    const newItem: LineItem = {
+      description: "",
+      quantity: 1,
+      unitPrice: 0,
+      taxRate: 0,
+      appliedTaxes: null,
+      total: base,
+    };
+    const prepped = recalcItem(newItem, defaultKey, taxes, taxGroups);
+    onChange([...items, prepped]);
   };
 
   const removeItem = (index: number) => {
@@ -102,67 +197,20 @@ export function LineItemsTable({
     const updated = items.map((item, i) => {
       if (i !== index) return item;
       const newItem = { ...item, [field]: value };
-      return recalc(newItem);
+      // Re-run tax computation using the existing selection key when qty/price change.
+      const key = selectionKeyFromItem(newItem);
+      return recalcItem(newItem, key, taxes, taxGroups);
     });
     onChange(updated);
   };
 
-  const updateTaxes = (index: number, selectedIds: string[]) => {
+  const updateTaxSelection = (index: number, key: string) => {
     const updated = items.map((item, i) => {
       if (i !== index) return item;
-      const selectedTaxes = taxes.filter((t) => selectedIds.includes(t.id));
-      const newItem = { ...item, _selectedTaxIds: selectedIds, _selectedTaxes: selectedTaxes };
-      return recalcWithTaxes(newItem, selectedTaxes);
+      return recalcItem(item, key, taxes, taxGroups);
     });
     onChange(updated);
   };
-
-  function recalc(item: LineItem & { _selectedTaxes?: Tax[] }) {
-    return recalcWithTaxes(item, item._selectedTaxes ?? getSelectedTaxes(item));
-  }
-
-  function getAppliedTaxItems(item: LineItem): AppliedTax[] {
-    if (!item.appliedTaxes) return [];
-    if (item.appliedTaxes.type === "group") return item.appliedTaxes.items;
-    // type === "tax": single-tax snapshot
-    const s = item.appliedTaxes;
-    return [{ taxId: s.taxId, name: s.name, rate: s.rate, isInclusive: s.isInclusive, isCompound: false, amount: s.amount }];
-  }
-
-  function getSelectedTaxes(item: LineItem): Tax[] {
-    const applied = getAppliedTaxItems(item);
-    if (!applied.length) return [];
-    return taxes.filter((t) => applied.some((a) => a.taxId === t.id));
-  }
-
-  function recalcWithTaxes(item: LineItem & { _selectedTaxes?: Tax[]; _selectedTaxIds?: string[] }, selectedTaxes: Tax[]): LineItem {
-    const base = item.quantity * item.unitPrice;
-    const taxItems = selectedTaxes.map((t) => ({
-      taxId: t.id,
-      name: t.name,
-      rate: t.rate,
-      isCompound: false, // TODO Task 7: isCompound comes from TaxGroupItem, not Tax
-      isInclusive: t.isInclusive,
-    }));
-    const selection: import("@/types").TaxSelection = {
-      type: "group",
-      groupId: "",
-      groupName: "",
-      items: taxItems,
-    };
-    const { snapshot: rawSnapshot, totalTax, effectiveRate } = computeLineTaxes(base, selection);
-    const snapshot = rawSnapshot && rawSnapshot.type === "group" && rawSnapshot.items.length > 0
-      ? rawSnapshot
-      : null;
-    return {
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      taxRate: Math.round(effectiveRate * 100) / 100,
-      appliedTaxes: snapshot,
-      total: base + totalTax,
-    };
-  }
 
   const subtotal = items.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxAmount = items.reduce((s, item) => {
@@ -170,11 +218,6 @@ export function LineItemsTable({
     return s + (item.total - base);
   }, 0);
   const total = subtotal + taxAmount;
-
-  // Build a map of selected tax IDs per item from appliedTaxes
-  function getSelectedIds(item: LineItem): string[] {
-    return getAppliedTaxItems(item).map((a) => a.taxId);
-  }
 
   return (
     <div className="space-y-4">
@@ -185,85 +228,126 @@ export function LineItemsTable({
               <th className="text-left px-3 py-2 text-gray-500 font-medium">Description</th>
               <th className="text-left px-3 py-2 text-gray-500 font-medium w-20">Qty</th>
               <th className="text-left px-3 py-2 text-gray-500 font-medium w-28">Unit Price</th>
-              <th className="text-left px-3 py-2 text-gray-500 font-medium w-36">Tax</th>
+              <th className="text-left px-3 py-2 text-gray-500 font-medium w-44">Tax</th>
               <th className="text-right px-3 py-2 text-gray-500 font-medium w-28">Total</th>
               <th className="w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {items.map((item, index) => (
-              <tr key={index}>
-                <td className="px-3 py-2">
-                  <Input
-                    value={item.description}
-                    onChange={(e) => updateItem(index, "description", e.target.value)}
-                    placeholder="Item description"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <Input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, "quantity", parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.01"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <Input
-                    type="number"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.01"
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  {taxes.length > 0 ? (
-                    <div>
-                      <TaxSelector
-                        allTaxes={taxes}
-                        selectedIds={getSelectedIds(item)}
-                        onChange={(ids) => updateTaxes(index, ids)}
-                      />
-                      {getAppliedTaxItems(item).length > 0 && (
-                        <div className="mt-1 space-y-0.5">
-                          {getAppliedTaxItems(item).map((a) => (
-                            <div key={a.taxId} className="text-xs text-gray-400 flex justify-between">
-                              <span>{a.name}{a.isInclusive ? " (incl.)" : a.isCompound ? " (cmpd.)" : ""}</span>
-                              <span>{formatCurrency(a.amount, currency)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+            {items.map((item, index) => {
+              const selKey = selectionKeyFromItem(item);
+              const snapshot = item.appliedTaxes;
+
+              return (
+                <tr key={index}>
+                  <td className="px-3 py-2">
+                    <Input
+                      value={item.description}
+                      onChange={(e) => updateItem(index, "description", e.target.value)}
+                      placeholder="Item description"
+                    />
+                  </td>
+                  <td className="px-3 py-2">
                     <Input
                       type="number"
-                      value={item.taxRate}
-                      onChange={(e) => updateItem(index, "taxRate", parseFloat(e.target.value) || 0)}
+                      value={item.quantity}
+                      onChange={(e) =>
+                        updateItem(index, "quantity", parseFloat(e.target.value) || 0)
+                      }
                       min="0"
-                      max="100"
                       step="0.01"
                     />
-                  )}
-                </td>
-                <td className="px-3 py-2 text-right font-medium">
-                  {formatCurrency(item.total, currency)}
-                </td>
-                <td className="px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => removeItem(index)}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-3 py-2">
+                    <Input
+                      type="number"
+                      value={item.unitPrice}
+                      onChange={(e) =>
+                        updateItem(index, "unitPrice", parseFloat(e.target.value) || 0)
+                      }
+                      min="0"
+                      step="0.01"
+                    />
+                  </td>
+                  <td className="px-3 py-2">
+                    {hasTaxOptions ? (
+                      <div>
+                        <TaxDropdown
+                          taxes={taxes}
+                          taxGroups={taxGroups}
+                          value={selKey}
+                          onChange={(key) => updateTaxSelection(index, key)}
+                          base={item.quantity * item.unitPrice}
+                        />
+                        {/* Tax breakdown below the dropdown */}
+                        {snapshot && (
+                          <div className="mt-1 space-y-0.5">
+                            {snapshot.type === "tax" ? (
+                              <div className="text-xs text-gray-400 flex justify-between">
+                                <span>
+                                  {taxLabel({
+                                    name: snapshot.name,
+                                    rate: snapshot.rate,
+                                    isInclusive: snapshot.isInclusive,
+                                  })}
+                                </span>
+                                <span>{formatCurrency(snapshot.amount, currency)}</span>
+                              </div>
+                            ) : (
+                              snapshot.items.map((a) => (
+                                <div
+                                  key={a.taxId}
+                                  className="text-xs text-gray-400 flex justify-between"
+                                >
+                                  <span>
+                                    {taxLabel({
+                                      name: a.name,
+                                      rate: a.rate,
+                                      isInclusive: a.isInclusive,
+                                    })}
+                                    {a.isCompound ? " (cmpd.)" : ""}
+                                  </span>
+                                  <span>{formatCurrency(a.amount, currency)}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Input
+                        type="number"
+                        value={item.taxRate}
+                        onChange={(e) =>
+                          updateItem(index, "taxRate", parseFloat(e.target.value) || 0)
+                        }
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right font-medium">
+                    {formatCurrency(item.total, currency)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path
+                          fillRule="evenodd"
+                          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
