@@ -71,15 +71,14 @@ export function DocumentActions({
             </Button>
           </a>
         )}
-        {!pdfUrl && (
-          <Button
-            size="sm"
-            onClick={generatePDF}
-            loading={loading === "pdf"}
-          >
-            Generate PDF
-          </Button>
-        )}
+        <Button
+          size="sm"
+          variant={pdfUrl ? "outline" : "primary"}
+          onClick={generatePDF}
+          loading={loading === "pdf"}
+        >
+          {pdfUrl ? "Regenerate PDF" : "Generate PDF"}
+        </Button>
       </div>
 
       {/* Invoice status actions */}
