@@ -7,6 +7,7 @@ import Link from "next/link";
 
 interface DocumentActionsProps {
   docId: string;
+  docNumber: string;
   docType: string;
   docStatus: string;
   pdfUrl?: string;
@@ -15,6 +16,7 @@ interface DocumentActionsProps {
 
 export function DocumentActions({
   docId,
+  docNumber,
   docType,
   docStatus,
   pdfUrl,
@@ -63,12 +65,7 @@ export function DocumentActions({
       {/* Header actions */}
       <div className="flex gap-2">
         {pdfUrl && (
-          <a
-            href={pdfUrl}
-            target={pdfUrl.startsWith("data:") ? "_self" : "_blank"}
-            rel="noreferrer"
-            download={pdfUrl.startsWith("data:") ? `${docId}.pdf` : undefined}
-          >
+          <a href={`/api/documents/${docId}/download`} download={`${docNumber}.pdf`}>
             <Button variant="outline" size="sm">
               Download PDF
             </Button>

@@ -87,6 +87,7 @@ export default async function DocumentDetailPage({
 
       <DocumentActions
         docId={doc.id}
+        docNumber={doc.docNumber}
         docType={doc.type}
         docStatus={doc.status}
         pdfUrl={doc.pdfUrl ?? undefined}
