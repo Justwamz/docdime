@@ -96,7 +96,7 @@ function DashboardSidebar({
 
       {/* Sidebar */}
       <aside
-        {...(!isOpen ? { inert: "" } : {})}
+        {...(!isOpen ? { inert: true as unknown as boolean } : {})}
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col h-full transform transition-transform duration-300 ease-in-out",
           "lg:relative lg:translate-x-0 lg:z-auto",

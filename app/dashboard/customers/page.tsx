@@ -101,6 +101,7 @@ export default function CustomersPage() {
               </button>
             </div>
           ) : (
+            <>
             <div className="sm:hidden divide-y divide-gray-100">
               {customers.map((c) => (
                 <div key={c.id} className="px-4 py-3">
@@ -148,6 +149,7 @@ export default function CustomersPage() {
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
