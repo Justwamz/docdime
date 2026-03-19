@@ -99,7 +99,6 @@ export interface Tax {
   rate: number;
   isDefault: boolean;
   isInclusive: boolean;
-  isCompound: boolean;
 }
 
 export interface BankingDetails {

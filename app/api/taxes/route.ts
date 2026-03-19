@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name, rate, isDefault, isInclusive, isCompound } = await req.json();
+    const { name, rate, isDefault, isInclusive } = await req.json();
     if (!name || rate === undefined) {
       return NextResponse.json({ error: "Name and rate are required" }, { status: 400 });
     }
@@ -43,7 +43,6 @@ export async function POST(req: Request) {
         rate: parseFloat(rate),
         isDefault: isDefault ?? false,
         isInclusive: isInclusive ?? false,
-        isCompound: isCompound ?? false,
       },
     });
 

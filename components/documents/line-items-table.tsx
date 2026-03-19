@@ -64,7 +64,7 @@ function TaxSelector({
                   className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600"
                 />
                 <span className="text-sm flex-1">{tax.name}</span>
-                <span className="text-xs text-gray-400">{tax.rate}%{tax.isInclusive ? " incl." : tax.isCompound ? " cmpd." : ""}</span>
+                <span className="text-xs text-gray-400">{tax.rate}%{tax.isInclusive ? " incl." : ""}</span>
               </label>
             ))}
             <button
@@ -132,7 +132,7 @@ export function LineItemsTable({
       taxId: t.id,
       name: t.name,
       rate: t.rate,
-      isCompound: t.isCompound,
+      isCompound: false,
       isInclusive: t.isInclusive,
     }));
     const { breakdown, totalTax, effectiveRate } = computeLineTaxes(base, taxInput);

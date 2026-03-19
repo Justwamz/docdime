@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name, rate, isDefault, isInclusive, isCompound } = await req.json();
+    const { name, rate, isDefault, isInclusive } = await req.json();
 
     const tax = await prisma.tax.findFirst({ where: { id: params.id, userId: session.user.id } });
     if (!tax) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -24,7 +25,6 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         rate: parseFloat(rate),
         isDefault: isDefault ?? false,
         isInclusive: isInclusive ?? false,
-        isCompound: isCompound ?? false,
       },
     });
 
@@ -45,6 +45,12 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     await prisma.tax.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return NextResponse.json(
+        { error: "This tax is used in one or more tax groups. Remove it from those groups first." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
