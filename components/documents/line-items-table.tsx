@@ -141,7 +141,7 @@ export function LineItemsTable({
       taxId: t.id,
       name: t.name,
       rate: t.rate,
-      isCompound: false,
+      isCompound: false, // TODO Task 7: isCompound comes from TaxGroupItem, not Tax
       isInclusive: t.isInclusive,
     }));
     const { breakdown, totalTax, effectiveRate } = computeLineTaxes(base, taxInput);
