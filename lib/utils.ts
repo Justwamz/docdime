@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { AppliedTax, AppliedTaxSnapshot, TaxSelection } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -49,41 +50,107 @@ export function isExpired(doc: {
   return new Date(doc.expiryDate) < new Date();
 }
 
+export function taxLabel(tax: { name: string; rate: number; isInclusive: boolean }): string {
+  return `${tax.name} ${tax.rate}% (${tax.isInclusive ? "Inclusive" : "Exclusive"})`;
+}
+
+export function readAppliedTaxes(raw: unknown): AppliedTaxSnapshot | null {
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    const items = raw as AppliedTax[];
+    if (items.length === 0) return null;
+    if (items.length === 1) {
+      return {
+        type: "tax",
+        taxId: items[0].taxId,
+        name: items[0].name,
+        rate: items[0].rate,
+        isInclusive: items[0].isInclusive,
+        amount: items[0].amount,
+      };
+    }
+    return { type: "group", groupId: "__legacy__", groupName: "Legacy Taxes", items };
+  }
+  return raw as AppliedTaxSnapshot;
+}
+
 /**
- * Compute tax breakdown for a line item.
+ * Compute tax breakdown for a line item given a TaxSelection.
  *
  * Order of application:
  *  1. Inclusive taxes  — extracted from the unit price, don't change the total
  *  2. Non-compound exclusive taxes — applied on base
  *  3. Compound exclusive taxes     — applied on (base + non-compound exclusive amounts)
  *
- * Returns each tax with its computed amount, plus the total tax amount.
+ * Returns a snapshot of the applied taxes, plus the total tax amount and effective rate.
  */
 export function computeLineTaxes(
-  base: number, // quantity × unitPrice
-  taxes: Array<{ taxId: string; name: string; rate: number; isCompound: boolean; isInclusive: boolean }>
-): { breakdown: Array<{ taxId: string; name: string; rate: number; isCompound: boolean; isInclusive: boolean; amount: number }>; totalTax: number; effectiveRate: number } {
-  if (!taxes.length || base === 0) return { breakdown: [], totalTax: 0, effectiveRate: 0 };
+  base: number,
+  selection: TaxSelection
+): { totalTax: number; effectiveRate: number; snapshot: AppliedTaxSnapshot } {
+  // Normalise to a list of items for uniform processing
+  const items =
+    selection.type === "tax"
+      ? [
+          {
+            taxId: selection.taxId,
+            name: selection.name,
+            rate: selection.rate,
+            isInclusive: selection.isInclusive,
+            isCompound: false,
+          },
+        ]
+      : selection.items;
 
-  let nonCompoundSum = 0;
-  const breakdown = taxes.map((t) => {
+  let runningExclusiveSum = 0;
+  const itemAmounts: number[] = items.map((t) => {
     let amount: number;
     if (t.isInclusive) {
       // Tax is already inside the price: amount = base × rate / (100 + rate)
       amount = (base * t.rate) / (100 + t.rate);
     } else if (t.isCompound) {
       // Applied on (base + all non-compound exclusive taxes accumulated so far)
-      amount = ((base + nonCompoundSum) * t.rate) / 100;
+      amount = ((base + runningExclusiveSum) * t.rate) / 100;
+      runningExclusiveSum += amount;
     } else {
       amount = (base * t.rate) / 100;
-      nonCompoundSum += amount;
+      runningExclusiveSum += amount;
     }
-    return { ...t, amount: Math.round(amount * 100) / 100 };
+    return Math.round(amount * 100) / 100;
   });
 
-  const totalTax = breakdown.reduce((s, t) => s + (t.isInclusive ? 0 : t.amount), 0);
+  // Inclusive taxes are extracted from price (not added), so totalTax = exclusive sum only
+  const totalTax = runningExclusiveSum;
   const effectiveRate = base > 0 ? (totalTax / base) * 100 : 0;
-  return { breakdown, totalTax, effectiveRate };
+
+  // Build the snapshot
+  let snapshot: AppliedTaxSnapshot;
+  if (selection.type === "tax") {
+    snapshot = {
+      type: "tax",
+      taxId: selection.taxId,
+      name: selection.name,
+      rate: selection.rate,
+      isInclusive: selection.isInclusive,
+      amount: itemAmounts[0],
+    };
+  } else {
+    snapshot = {
+      type: "group",
+      groupId: selection.groupId,
+      groupName: selection.groupName,
+      items: items.map((t, i) => ({
+        taxId: t.taxId,
+        name: t.name,
+        rate: t.rate,
+        isInclusive: t.isInclusive,
+        isCompound: t.isCompound,
+        amount: itemAmounts[i],
+      })),
+    };
+  }
+
+  return { totalTax, effectiveRate, snapshot };
 }
 
 export function truncate(str: string, maxLength: number): string {
