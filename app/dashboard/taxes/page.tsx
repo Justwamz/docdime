@@ -26,12 +26,12 @@ interface TaxFormState {
 
 interface Step {
   taxId: string;
-  isCompound: boolean;
 }
 
 interface GroupFormState {
   name: string;
   isDefault: boolean;
+  isCompound: boolean;
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -63,7 +63,7 @@ export default function TaxesPage() {
   // Group dialog
   const [showGroupDialog, setShowGroupDialog] = useState(false);
   const [editGroup, setEditGroup] = useState<TaxGroup | null>(null);
-  const [groupForm, setGroupForm] = useState<GroupFormState>({ name: "", isDefault: false });
+  const [groupForm, setGroupForm] = useState<GroupFormState>({ name: "", isDefault: false, isCompound: false });
   const [steps, setSteps] = useState<Step[]>([]);
   const [groupSaving, setGroupSaving] = useState(false);
   const [groupDialogError, setGroupDialogError] = useState("");
@@ -158,17 +158,17 @@ export default function TaxesPage() {
 
   function openCreateGroup() {
     setEditGroup(null);
-    setGroupForm({ name: "", isDefault: false });
-    setSteps([{ taxId: "", isCompound: false }]);
+    setGroupForm({ name: "", isDefault: false, isCompound: false });
+    setSteps([{ taxId: "" }]);
     setGroupDialogError("");
     setShowGroupDialog(true);
   }
 
   function openEditGroup(group: TaxGroup) {
     setEditGroup(group);
-    setGroupForm({ name: group.name, isDefault: group.isDefault });
+    setGroupForm({ name: group.name, isDefault: group.isDefault, isCompound: group.isCompound });
     const sorted = [...group.items].sort((a, b) => a.order - b.order);
-    setSteps(sorted.map((item) => ({ taxId: item.taxId, isCompound: item.isCompound })));
+    setSteps(sorted.map((item) => ({ taxId: item.taxId })));
     setGroupDialogError("");
     setShowGroupDialog(true);
   }
@@ -193,7 +193,8 @@ export default function TaxesPage() {
       body: JSON.stringify({
         name: groupForm.name.trim(),
         isDefault: groupForm.isDefault,
-        items: filledSteps.map((s, i) => ({ taxId: s.taxId, order: i + 1, isCompound: s.isCompound })),
+        isCompound: groupForm.isCompound,
+        items: filledSteps.map((s, i) => ({ taxId: s.taxId, order: i + 1 })),
       }),
     });
     const data = await res.json();
@@ -215,7 +216,7 @@ export default function TaxesPage() {
   // ── Step helpers ───────────────────────────────────────────────────────────
 
   function addStep() {
-    setSteps((prev) => [...prev, { taxId: "", isCompound: false }]);
+    setSteps((prev) => [...prev, { taxId: "" }]);
   }
 
   function removeStep(index: number) {
@@ -234,20 +235,7 @@ export default function TaxesPage() {
 
   function updateStep(index: number, patch: Partial<Step>) {
     setSteps((prev) =>
-      prev.map((s, i) => {
-        if (i !== index) return s;
-        const updated = { ...s, ...patch };
-        // If tax switched to inclusive, disable compound
-        if ("taxId" in patch) {
-          const t = taxes.find((tx) => tx.id === patch.taxId);
-          if (t?.isInclusive) updated.isCompound = false;
-        }
-        if ("isCompound" in patch) {
-          const t = taxes.find((tx) => tx.id === s.taxId);
-          if (t?.isInclusive) updated.isCompound = false;
-        }
-        return updated;
-      })
+      prev.map((s, i) => (i !== index ? s : { ...s, ...patch }))
     );
   }
 
@@ -261,13 +249,7 @@ export default function TaxesPage() {
       .map((s) => {
         const t = taxes.find((tx) => tx.id === s.taxId);
         if (!t) return null;
-        return {
-          taxId: s.taxId,
-          name: t.name,
-          rate: t.rate,
-          isInclusive: t.isInclusive,
-          isCompound: s.isCompound,
-        };
+        return { taxId: s.taxId, name: t.name, rate: t.rate, isInclusive: t.isInclusive };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
 
@@ -277,6 +259,7 @@ export default function TaxesPage() {
       type: "group",
       groupId: "preview",
       groupName: groupForm.name || "Preview",
+      isCompound: groupForm.isCompound,
       items,
     };
 
@@ -284,7 +267,7 @@ export default function TaxesPage() {
     if (snapshot.type !== "group") return null;
 
     return snapshot.items;
-  }, [steps, taxes, groupForm.name]);
+  }, [steps, taxes, groupForm.name, groupForm.isCompound]);
 
   const previewTotal = useMemo(() => {
     if (!previewRows) return null;
@@ -427,13 +410,15 @@ export default function TaxesPage() {
                       <div key={g.id} className="px-4 py-3">
                         <div className="flex items-start justify-between">
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{g.name}</p>
-                            {g.isDefault && <Badge variant="success">Default</Badge>}
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-medium text-gray-900">{g.name}</p>
+                              {g.isDefault && <Badge variant="success">Default</Badge>}
+                              {g.isCompound && <Badge variant="warning">Compound</Badge>}
+                            </div>
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               {sortedItems.map((item) => (
                                 <span key={item.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
                                   {taxLabel(item.tax)}
-                                  {item.isCompound && <span className="ml-1 text-orange-500" title="Compound">⊕</span>}
                                 </span>
                               ))}
                             </div>
@@ -463,7 +448,12 @@ export default function TaxesPage() {
                         const sortedItems = [...g.items].sort((a, b) => a.order - b.order);
                         return (
                           <TableRow key={g.id}>
-                            <TableTd className="font-medium">{g.name}</TableTd>
+                            <TableTd className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {g.name}
+                                {g.isCompound && <Badge variant="warning">Compound</Badge>}
+                              </div>
+                            </TableTd>
                             <TableTd>
                               <div className="flex flex-wrap gap-1">
                                 {sortedItems.map((item) => (
@@ -472,11 +462,6 @@ export default function TaxesPage() {
                                     className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700"
                                   >
                                     {taxLabel(item.tax)}
-                                    {item.isCompound && (
-                                      <span className="ml-1 text-orange-500" title="Compound">
-                                        ⊕
-                                      </span>
-                                    )}
                                   </span>
                                 ))}
                               </div>
@@ -592,13 +577,30 @@ export default function TaxesPage() {
             />
           </div>
 
-          {/* Default toggle */}
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={groupForm.isDefault}
-              onCheckedChange={(v) => setGroupForm((p) => ({ ...p, isDefault: v }))}
-            />
-            <Label className="mb-0">Set as default group</Label>
+          {/* Default + Compound toggles */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={groupForm.isDefault}
+                onCheckedChange={(v) => setGroupForm((p) => ({ ...p, isDefault: v }))}
+              />
+              <Label className="mb-0">Set as default group</Label>
+            </div>
+            <div className="border border-gray-200 rounded-xl p-4 space-y-1 bg-gray-50">
+              <div className="flex items-start gap-3">
+                <Switch
+                  checked={groupForm.isCompound}
+                  onCheckedChange={(v) => setGroupForm((p) => ({ ...p, isCompound: v }))}
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Compound (tax-on-tax)</p>
+                  <p className="text-xs text-gray-500">
+                    Each tax is applied on the running total (base + all previous taxes), in step order.
+                    e.g. Excise 20% on 100 = 20, then VAT 16% on 120 = 19.20.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Steps */}
@@ -606,8 +608,6 @@ export default function TaxesPage() {
             <p className="text-sm font-semibold text-gray-700 mb-2">Tax Steps</p>
             <div className="space-y-3">
               {steps.map((step, index) => {
-                const selectedTax = taxes.find((t) => t.id === step.taxId);
-                const isInclusiveTax = selectedTax?.isInclusive ?? false;
                 return (
                   <div
                     key={index}
@@ -655,27 +655,6 @@ export default function TaxesPage() {
                       </Select>
                     </div>
 
-                    {/* Compound toggle */}
-                    <div
-                      className={`flex items-center gap-1.5 shrink-0 mt-1.5 ${
-                        isInclusiveTax ? "opacity-40 cursor-not-allowed" : ""
-                      }`}
-                      title={
-                        isInclusiveTax
-                          ? "Inclusive taxes cannot be compound"
-                          : "Apply on running total (compound)"
-                      }
-                    >
-                      <Switch
-                        checked={!isInclusiveTax && step.isCompound}
-                        onCheckedChange={(v) => {
-                          if (!isInclusiveTax) updateStep(index, { isCompound: v });
-                        }}
-                        disabled={isInclusiveTax}
-                      />
-                      <span className="text-xs text-gray-600 whitespace-nowrap">Compound</span>
-                    </div>
-
                     {/* Remove */}
                     <button
                       type="button"
@@ -701,10 +680,13 @@ export default function TaxesPage() {
           {/* Live preview */}
           {previewRows && previewRows.length > 0 && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   Preview (base = 100)
                 </p>
+                {groupForm.isCompound && (
+                  <span className="text-xs text-orange-600 font-medium">Compound mode</span>
+                )}
               </div>
               <table className="w-full text-sm">
                 <thead>
@@ -720,9 +702,6 @@ export default function TaxesPage() {
                     <tr key={i} className="border-b border-gray-50">
                       <td className="px-4 py-2 text-gray-700">
                         {taxLabel({ name: row.name, rate: row.rate, isInclusive: row.isInclusive })}
-                        {row.isCompound && (
-                          <span className="ml-1.5 text-xs text-orange-500">(compound)</span>
-                        )}
                       </td>
                       <td className="px-4 py-2 text-right text-gray-900 font-mono">
                         {row.amount.toFixed(2)}

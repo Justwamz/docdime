@@ -170,27 +170,27 @@ model AppSettings {
 }
 
 model TaxGroup {
-  id        String         @id @default(cuid())
-  userId    String
-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  isDefault Boolean        @default(false)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  isDefault  Boolean        @default(false)
+  isCompound Boolean        @default(false)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
-  items     TaxGroupItem[]
+  items      TaxGroupItem[]
 }
 
 model TaxGroupItem {
-  id         String    @id @default(cuid())
-  groupId    String
-  group      TaxGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  taxId      String
-  tax        Tax       @relation(fields: [taxId], references: [id], onDelete: Restrict)
-  order      Int
-  isCompound Boolean   @default(false)
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id        String    @id @default(cuid())
+  groupId   String
+  group     TaxGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  taxId     String
+  tax       Tax       @relation(fields: [taxId], references: [id], onDelete: Restrict)
+  order     Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@unique([groupId, order])
   @@unique([groupId, taxId])

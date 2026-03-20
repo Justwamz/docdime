@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/Users/kenneth.wamunyu/Desktop/Wawesh/DocDime/app/api -name *.ts)",
+      "Bash(npx tsc:*)",
+      "Bash(aws --version)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\docs\\superpowers",
+      "C:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\api\\tax-groups"
+    ]
+  }
+}

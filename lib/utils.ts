@@ -77,53 +77,42 @@ export function readAppliedTaxes(raw: unknown): AppliedTaxSnapshot | null {
 /**
  * Compute tax breakdown for a line item given a TaxSelection.
  *
- * Order of application:
- *  1. Inclusive taxes  — extracted from the unit price, don't change the total
- *  2. Non-compound exclusive taxes — applied on base
- *  3. Compound exclusive taxes     — applied on (base + non-compound exclusive amounts)
- *
- * Returns a snapshot of the applied taxes, plus the total tax amount and effective rate.
+ * Simple tax / simple group: each tax applied independently on base.
+ * Compound group: taxes applied in order, each on (base + all previous exclusive amounts).
+ * Inclusive taxes: always extracted from base price (never added to total).
  */
 export function computeLineTaxes(
   base: number,
   selection: TaxSelection
 ): { totalTax: number; effectiveRate: number; snapshot: AppliedTaxSnapshot } {
-  // Normalise to a list of items for uniform processing
+  const isCompoundGroup = selection.type === "group" && selection.isCompound;
+
   const items =
     selection.type === "tax"
-      ? [
-          {
-            taxId: selection.taxId,
-            name: selection.name,
-            rate: selection.rate,
-            isInclusive: selection.isInclusive,
-            isCompound: false,
-          },
-        ]
+      ? [{ taxId: selection.taxId, name: selection.name, rate: selection.rate, isInclusive: selection.isInclusive }]
       : selection.items;
 
   let runningExclusiveSum = 0;
   const itemAmounts: number[] = items.map((t) => {
     let amount: number;
     if (t.isInclusive) {
-      // Tax is already inside the price: amount = base × rate / (100 + rate)
+      // Inclusive: extracted from price, does not add to total
       amount = (base * t.rate) / (100 + t.rate);
-    } else if (t.isCompound) {
-      // Applied on (base + all non-compound exclusive taxes accumulated so far)
+    } else if (isCompoundGroup) {
+      // Compound: apply on base + all previous exclusive amounts (tax-on-tax)
       amount = ((base + runningExclusiveSum) * t.rate) / 100;
       runningExclusiveSum += amount;
     } else {
+      // Simple: apply on base independently
       amount = (base * t.rate) / 100;
       runningExclusiveSum += amount;
     }
     return Math.round(amount * 100) / 100;
   });
 
-  // Inclusive taxes are extracted from price (not added), so totalTax = exclusive sum only
   const totalTax = runningExclusiveSum;
   const effectiveRate = base > 0 ? (totalTax / base) * 100 : 0;
 
-  // Build the snapshot
   let snapshot: AppliedTaxSnapshot;
   if (selection.type === "tax") {
     snapshot = {
@@ -144,7 +133,7 @@ export function computeLineTaxes(
         name: t.name,
         rate: t.rate,
         isInclusive: t.isInclusive,
-        isCompound: t.isCompound,
+        isCompound: isCompoundGroup,
         amount: itemAmounts[i],
       })),
     };

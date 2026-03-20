@@ -73,7 +73,6 @@ export interface TaxGroupItem {
   taxId: string;
   tax: Tax;
   order: number;
-  isCompound: boolean;
 }
 
 export interface TaxGroup {
@@ -81,6 +80,7 @@ export interface TaxGroup {
   userId: string;
   name: string;
   isDefault: boolean;
+  isCompound: boolean;
   items: TaxGroupItem[];
 }
 
@@ -90,7 +90,8 @@ export type TaxSelection =
       type: "group";
       groupId: string;
       groupName: string;
-      items: Array<{ taxId: string; name: string; rate: number; isInclusive: boolean; isCompound: boolean }>;
+      isCompound: boolean;
+      items: Array<{ taxId: string; name: string; rate: number; isInclusive: boolean }>;
     };
 
 export interface LineItem {

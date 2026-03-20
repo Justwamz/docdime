@@ -9,7 +9,6 @@ const groupInclude = {
     select: {
       id: true,
       order: true,
-      isCompound: true,
       tax: {
         select: { id: true, name: true, rate: true, isInclusive: true },
       },
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { name, isDefault, items } = await req.json();
+    const { name, isDefault, isCompound, items } = await req.json();
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -68,11 +67,11 @@ export async function POST(req: Request) {
           userId: session.user.id,
           name,
           isDefault: isDefault ?? false,
+          isCompound: isCompound ?? false,
           items: {
-            create: items.map((item: { taxId: string; order: number; isCompound?: boolean }) => ({
+            create: items.map((item: { taxId: string; order: number }) => ({
               taxId: item.taxId,
               order: item.order,
-              isCompound: item.isCompound ?? false,
             })),
           },
         },

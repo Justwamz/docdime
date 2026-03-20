@@ -101,12 +101,12 @@ function buildSelection(
       type: "group",
       groupId: group.id,
       groupName: group.name,
+      isCompound: group.isCompound,
       items: group.items.map((item) => ({
         taxId: item.taxId,
         name: item.tax.name,
         rate: item.tax.rate,
         isInclusive: item.tax.isInclusive,
-        isCompound: item.isCompound,
       })),
     };
   }
@@ -391,8 +391,7 @@ export function LineItemsTable({
                                       rate: a.rate,
                                       isInclusive: a.isInclusive,
                                     })}
-                                    {a.isCompound ? " (cmpd.)" : ""}
-                                  </span>
+                                                                      </span>
                                   <span>{formatCurrency(a.amount, currency)}</span>
                                 </div>
                               ))
