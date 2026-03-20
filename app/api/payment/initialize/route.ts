@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { initializePayment, generateReference } from "@/lib/paystack";
 
-const DOC_PRICE_USD = 0.11;
+const DOC_PRICE_USD = 0.10;
 
 export async function POST(req: Request) {
   try {
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
     // Initialize Paystack payment
     const reference = generateReference();
-    const amountInKobo = Math.round(DOC_PRICE_USD * 100); // $0.11 = 11 cents
+    const amountInKobo = Math.round(DOC_PRICE_USD * 100); // $0.10 = 10 cents
 
     // Create pending transaction
     await prisma.transaction.create({
