@@ -101,10 +101,7 @@ export default async function DocumentDetailPage({
 
       <DocumentPreview
         document={docForDisplay}
-        businessName={user?.businessName ?? user?.name ?? ""}
-        businessEmail={user?.businessEmail ?? undefined}
-        businessAddress={user?.businessAddress ?? undefined}
-        locked={!unlocked}
+        locked={true}
       />
     </div>
   );
