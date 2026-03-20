@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const userId = session.user.id;
 
-  const [user, totalDocs, recentDocs, revenue] = await Promise.all([
+  const [user, totalDocs, recentDocs, paidInvoices] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId } }),
     prisma.document.count({ where: { userId } }),
     prisma.document.findMany({
@@ -24,10 +24,7 @@ export default async function DashboardPage() {
       take: 5,
       include: { customer: true },
     }),
-    prisma.document.aggregate({
-      where: { userId, type: "INVOICE", status: "PAID" },
-      _sum: { total: true },
-    }),
+    prisma.document.count({ where: { userId, type: "INVOICE", status: "PAID" } }),
   ]);
 
   const overdue = await prisma.document.count({
@@ -47,8 +44,8 @@ export default async function DashboardPage() {
       color: "bg-blue-50 text-blue-700",
     },
     {
-      label: "Revenue Collected",
-      value: formatCurrency(revenue._sum.total ?? 0, user?.currency ?? "USD"),
+      label: "Paid Invoices",
+      value: paidInvoices,
       icon: "💰",
       color: "bg-green-50 text-green-700",
     },
