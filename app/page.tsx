@@ -4,6 +4,8 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { getPricing } from "@/lib/pricing";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "DocDime — Professional Business Document Generator",
   description:
