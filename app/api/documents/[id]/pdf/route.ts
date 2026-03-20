@@ -27,6 +27,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     }
 
     const pdfBytes = await generatePDF({
+      documentId: params.id,
       docNumber: doc.docNumber,
       type: doc.type,
       issueDate: doc.issueDate.toISOString(),

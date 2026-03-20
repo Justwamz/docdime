@@ -46,6 +46,7 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const pdfBytes = await generatePDF({
+      documentId: documentId,
       docNumber: doc.docNumber,
       type: doc.type,
       issueDate: doc.issueDate.toISOString(),
