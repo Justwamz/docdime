@@ -111,13 +111,15 @@ model Document {
   currency        String         @default("USD")
   pdfUrl          String?
   paid            Boolean        @default(false)
-  convertedFromId String?
-  convertedToId   String?
-  lineItems       LineItem[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  convertedFromId  String?
+  convertedToId    String?
+  verificationCode String?        @unique @default(cuid())
+  lineItems        LineItem[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   transactions Transaction[]
+  verification DocumentVerification?
 }
 
 model LineItem {
@@ -148,6 +150,25 @@ model Transaction {
   metadata        Json?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+}
+
+model DocumentVerification {
+  id             String    @id @default(cuid())
+  documentId     String    @unique
+  verifiedCount  Int       @default(0)
+  lastVerifiedAt DateTime?
+  createdAt      DateTime  @default(now())
+  document       Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  logs           VerificationLog[]
+}
+
+model VerificationLog {
+  id             String               @id @default(cuid())
+  verificationId String
+  ip             String?
+  userAgent      String?
+  verifiedAt     DateTime             @default(now())
+  verification   DocumentVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
 }
 
 model EmailTemplate {
