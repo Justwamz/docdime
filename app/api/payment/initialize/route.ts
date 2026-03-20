@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { initializePayment, generateReference } from "@/lib/paystack";
-
-const DOC_PRICE_USD = 0.10;
+import { getPricing } from "@/lib/pricing";
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +20,8 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+    const { docPriceUsd, proMonthlyDocs } = await getPricing();
 
     // Check if PRO user has free docs remaining
     if (user.plan === "PRO") {
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
         });
       }
 
-      if (docsUsed < 20) {
+      if (docsUsed < proMonthlyDocs) {
         // Free doc — skip payment
         return NextResponse.json({ success: true, free: true });
       }
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
 
     // Initialize Paystack payment
     const reference = generateReference();
-    const amountInKobo = Math.round(DOC_PRICE_USD * 100); // $0.10 = 10 cents
+    const amountInKobo = Math.round(docPriceUsd * 100);
 
     // Create pending transaction
     await prisma.transaction.create({
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         documentId,
         paystackRef: reference,
-        amount: DOC_PRICE_USD,
+        amount: docPriceUsd,
         currency: "USD",
         status: "PENDING",
         type: "DOC_GENERATION",
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
       free: false,
       reference,
       amountInKobo,
-      amount: DOC_PRICE_USD,
+      amount: docPriceUsd,
     });
   } catch (error) {
     console.error("[Payment Initialize]", error);

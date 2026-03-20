@@ -25,6 +25,7 @@ export default function NewDocumentPage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [docPriceUsd, setDocPriceUsd] = useState(0.10);
   const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
   const [taxes, setTaxes] = useState<Array<{ id: string; name: string; rate: number; isDefault: boolean; isInclusive: boolean }>>([]);
   const [taxGroups, setTaxGroups] = useState<TaxGroup[]>([]);
@@ -46,6 +47,9 @@ export default function NewDocumentPage() {
     fetch("/api/customers").then((r) => r.json()).then((d) => setCustomers(d.data ?? []));
     fetch("/api/taxes").then((r) => r.json()).then((d) => setTaxes(d.data ?? []));
     fetch("/api/tax-groups").then((r) => r.json()).then((d) => setTaxGroups(d.data ?? []));
+    fetch("/api/pricing").then((r) => r.json()).then((d) => {
+      if (d.data?.docPriceUsd) setDocPriceUsd(d.data.docPriceUsd);
+    });
   }, []);
 
   function updateForm(field: string, value: string) {
@@ -316,7 +320,7 @@ export default function NewDocumentPage() {
           Save Draft
         </Button>
         <Button onClick={handleGeneratePDF} loading={loading} className="w-full sm:w-auto">
-          Generate PDF — $0.10
+          Generate PDF — ${docPriceUsd.toFixed(2)}
         </Button>
       </div>
     </div>

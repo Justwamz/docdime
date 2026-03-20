@@ -4,8 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { verifyPayment, generateReference } from "@/lib/paystack";
 import { triggerProUpgradedEmail } from "@/lib/email-triggers";
-
-const PRO_ANNUAL_USD = 20;
+import { getPricing } from "@/lib/pricing";
 
 export async function GET() {
   try {
@@ -31,14 +30,15 @@ export async function POST(req: Request) {
     const { action, reference } = await req.json();
 
     if (action === "initialize_upgrade") {
+      const { proAnnualUsd } = await getPricing();
       const ref = generateReference();
-      const amountInKobo = PRO_ANNUAL_USD * 100;
+      const amountInKobo = Math.round(proAnnualUsd * 100);
 
       await prisma.transaction.create({
         data: {
           userId: session.user.id,
           paystackRef: ref,
-          amount: PRO_ANNUAL_USD,
+          amount: proAnnualUsd,
           currency: "USD",
           status: "PENDING",
           type: "SUBSCRIPTION",

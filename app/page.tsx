@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import { getPricing } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "DocDime — Professional Business Document Generator",
@@ -50,51 +51,55 @@ export const metadata: Metadata = {
   },
 };
 
-const features = [
-  {
-    icon: "📄",
-    title: "Professional PDFs",
-    description:
-      "Generate beautiful, branded PDF invoices, quotes, and purchase orders in seconds.",
-  },
-  {
-    icon: "💰",
-    title: "Pay Only What You Use",
-    description:
-      "No monthly lock-in. Pay $0.10 per document or upgrade to Pro for $2/month.",
-  },
-  {
-    icon: "🌍",
-    title: "Multi-Currency Support",
-    description:
-      "Work with 30+ world currencies. Set your local currency once, bill globally.",
-  },
-  {
-    icon: "👥",
-    title: "Customer Management",
-    description:
-      "Save customer details and auto-fill documents. Track payment history per client.",
-  },
-  {
-    icon: "🔄",
-    title: "Quote to Invoice",
-    description:
-      "Convert accepted quotes to invoices with one click. No re-entry needed.",
-  },
-  {
-    icon: "📊",
-    title: "Dashboard Analytics",
-    description:
-      "See your revenue, outstanding invoices, and document stats at a glance.",
-  },
-];
+function getFeatures(docLabel: string, proMonthlyLabel: string) {
+  return [
+    {
+      icon: "📄",
+      title: "Professional PDFs",
+      description:
+        "Generate beautiful, branded PDF invoices, quotes, and purchase orders in seconds.",
+    },
+    {
+      icon: "💰",
+      title: "Pay Only What You Use",
+      description:
+        `No monthly lock-in. Pay ${docLabel} per document or upgrade to Pro for ${proMonthlyLabel}/month.`,
+    },
+    {
+      icon: "🌍",
+      title: "Multi-Currency Support",
+      description:
+        "Work with 30+ world currencies. Set your local currency once, bill globally.",
+    },
+    {
+      icon: "👥",
+      title: "Customer Management",
+      description:
+        "Save customer details and auto-fill documents. Track payment history per client.",
+    },
+    {
+      icon: "🔄",
+      title: "Quote to Invoice",
+      description:
+        "Convert accepted quotes to invoices with one click. No re-entry needed.",
+    },
+    {
+      icon: "📊",
+      title: "Dashboard Analytics",
+      description:
+        "See your revenue, outstanding invoices, and document stats at a glance.",
+    },
+  ];
+}
 
-const steps = [
-  { step: "1", title: "Create Account", desc: "Sign up free — no credit card required." },
-  { step: "2", title: "Add Your Business", desc: "Enter your business details and banking info." },
-  { step: "3", title: "Create a Document", desc: "Fill in customer, line items, and tax details." },
-  { step: "4", title: "Pay & Download", desc: "Pay $0.10 and get your professional PDF instantly." },
-];
+function getSteps(docLabel: string) {
+  return [
+    { step: "1", title: "Create Account", desc: "Sign up free — no credit card required." },
+    { step: "2", title: "Add Your Business", desc: "Enter your business details and banking info." },
+    { step: "3", title: "Create a Document", desc: "Fill in customer, line items, and tax details." },
+    { step: "4", title: "Pay & Download", desc: `Pay ${docLabel} and get your professional PDF instantly.` },
+  ];
+}
 
 const faqs = [
   {
@@ -119,7 +124,12 @@ const faqs = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const pricing = await getPricing();
+  const docLabel = `$${pricing.docPriceUsd.toFixed(2)}`;
+  const proMonthlyLabel = `$${pricing.proMonthlyUsd}`;
+  const proAnnualLabel = `$${pricing.proAnnualUsd}`;
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -129,7 +139,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 inline-block"></span>
-            Pay $0.10/doc — No subscriptions required
+            Pay {docLabel}/doc — No subscriptions required
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
             Professional Business
@@ -163,8 +173,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
             {[
-              { value: "$0.10", label: "Per document" },
-              { value: "$2/mo", label: "Pro plan" },
+              { value: docLabel, label: "Per document" },
+              { value: `${proMonthlyLabel}/mo`, label: "Pro plan" },
               { value: "30+", label: "Currencies supported" },
               { value: "3", label: "Document types" },
             ].map((stat) => (
@@ -187,7 +197,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature) => (
+            {getFeatures(docLabel, proMonthlyLabel).map((feature) => (
               <div
                 key={feature.title}
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
@@ -209,7 +219,7 @@ export default function LandingPage() {
             <p className="mt-3 text-lg text-gray-500">Up and running in 4 simple steps.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {steps.map((step) => (
+            {getSteps(docLabel).map((step) => (
               <div key={step.step} className="text-center">
                 <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
                   {step.step}
@@ -236,7 +246,7 @@ export default function LandingPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-8">
               <h3 className="text-xl font-semibold text-gray-900">Pay Per Use</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-5xl font-bold text-gray-900">$0.10</span>
+                <span className="text-5xl font-bold text-gray-900">{docLabel}</span>
                 <span className="text-gray-500">/ document</span>
               </div>
               <p className="mt-3 text-gray-500 text-sm">
@@ -273,12 +283,12 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold">Pro Plan</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-5xl font-bold">$2</span>
+                <span className="text-5xl font-bold">{proMonthlyLabel}</span>
                 <span className="text-blue-200">/ month</span>
               </div>
-              <p className="text-blue-200 text-sm">$20/year (save 17% vs monthly)</p>
+              <p className="text-blue-200 text-sm">{proAnnualLabel}/year (save {pricing.annualDiscountPct}% vs monthly)</p>
               <p className="mt-3 text-blue-100 text-sm">
-                20 free documents per month, then $0.10 each.
+                {pricing.proMonthlyDocs} free documents per month, then {docLabel} each.
               </p>
               <ul className="mt-6 space-y-3">
                 {[

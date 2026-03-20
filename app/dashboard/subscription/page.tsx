@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
+import { getPricing } from "@/lib/pricing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SubscriptionActions from "./subscription-actions";
@@ -12,7 +13,10 @@ export default async function SubscriptionPage() {
   const session = await getServerSession(authOptions);
   if (!session) return null;
 
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  const [user, pricing] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    getPricing(),
+  ]);
   if (!user) return null;
 
   const totalDocs = await prisma.document.count({
@@ -50,11 +54,11 @@ export default async function SubscriptionPage() {
               </div>
               {user.plan === "PRO" ? (
                 <p className="text-sm text-gray-500">
-                  $2/month • {user.docsThisMonth}/{20} free docs used this month
+                  ${pricing.proMonthlyUsd}/month • {user.docsThisMonth}/{pricing.proMonthlyDocs} free docs used this month
                   {user.proExpiresAt && ` • Renews ${formatDate(user.proExpiresAt)}`}
                 </p>
               ) : (
-                <p className="text-sm text-gray-500">$0.10 per document generated</p>
+                <p className="text-sm text-gray-500">${pricing.docPriceUsd.toFixed(2)} per document generated</p>
               )}
             </div>
           </div>
@@ -66,7 +70,7 @@ export default async function SubscriptionPage() {
         <Card className={user.plan !== "PRO" ? "border-2 border-gray-200" : "border-2 border-gray-100 opacity-60"}>
           <CardContent className="pt-5">
             <h3 className="font-semibold text-gray-900">Pay Per Use</h3>
-            <p className="text-3xl font-bold mt-2">$0.10<span className="text-sm text-gray-500 font-normal">/doc</span></p>
+            <p className="text-3xl font-bold mt-2">${pricing.docPriceUsd.toFixed(2)}<span className="text-sm text-gray-500 font-normal">/doc</span></p>
             <p className="text-sm text-gray-500 mt-2">Only pay when you generate a PDF</p>
             {user.plan === "PRO" && (
               <SubscriptionActions action="cancel" />
@@ -77,10 +81,10 @@ export default async function SubscriptionPage() {
         <Card className={user.plan === "PRO" ? "border-2 border-blue-500" : "border-2 border-blue-200"}>
           <CardContent className="pt-5">
             <h3 className="font-semibold text-gray-900">Pro Plan</h3>
-            <p className="text-3xl font-bold mt-2 text-blue-600">$2<span className="text-sm text-gray-500 font-normal">/month</span></p>
-            <p className="text-sm text-gray-500 mt-2">$20/year (save 17%) • 20 free docs/month</p>
+            <p className="text-3xl font-bold mt-2 text-blue-600">${pricing.proMonthlyUsd}<span className="text-sm text-gray-500 font-normal">/month</span></p>
+            <p className="text-sm text-gray-500 mt-2">${pricing.proAnnualUsd}/year (save {pricing.annualDiscountPct}%) • {pricing.proMonthlyDocs} free docs/month</p>
             {user.plan !== "PRO" && (
-              <SubscriptionActions action="upgrade" email={user.email} />
+              <SubscriptionActions action="upgrade" email={user.email} proAnnualUsd={pricing.proAnnualUsd} />
             )}
             {user.plan === "PRO" && (
               <p className="mt-3 text-sm text-green-600 font-medium">✓ Active plan</p>

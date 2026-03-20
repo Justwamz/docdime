@@ -15,9 +15,11 @@ declare global {
 export default function SubscriptionActions({
   action,
   email,
+  proAnnualUsd = 20,
 }: {
   action: "upgrade" | "cancel";
   email?: string;
+  proAnnualUsd?: number;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,7 @@ export default function SubscriptionActions({
   if (action === "upgrade") {
     return (
       <Button className="mt-4 w-full" onClick={handleUpgrade} loading={loading}>
-        Upgrade to Pro — $20/year
+        Upgrade to Pro — ${proAnnualUsd}/year
       </Button>
     );
   }

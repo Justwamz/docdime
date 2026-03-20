@@ -22,6 +22,9 @@ interface DocumentActionsProps {
   convertedToId?: string | null;
   unlocked?: boolean;
   userEmail?: string;
+  docPriceUsd?: number;
+  proMonthlyUsd?: number;
+  proMonthlyDocs?: number;
 }
 
 export function DocumentActions({
@@ -33,6 +36,9 @@ export function DocumentActions({
   convertedToId,
   unlocked = false,
   userEmail,
+  docPriceUsd = 0.10,
+  proMonthlyUsd = 2,
+  proMonthlyDocs = 20,
 }: DocumentActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
@@ -143,7 +149,7 @@ export function DocumentActions({
             onClick={payAndGeneratePDF}
             loading={loading === "pay"}
           >
-            Generate PDF — $0.10
+            Generate PDF — ${docPriceUsd.toFixed(2)}
           </Button>
         </div>
 
@@ -153,7 +159,7 @@ export function DocumentActions({
             <Link href="/dashboard/subscription" className="font-semibold underline underline-offset-2">
               upgrade to Pro
             </Link>{" "}
-            for $2/month and get 20 free documents monthly.
+            for ${proMonthlyUsd}/month and get {proMonthlyDocs} free documents monthly.
           </p>
         </div>
       </div>

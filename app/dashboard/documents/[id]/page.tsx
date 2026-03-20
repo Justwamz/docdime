@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { getPricing } from "@/lib/pricing";
 import { notFound, redirect } from "next/navigation";
 import { formatDate, isOverdue, isExpired } from "@/lib/utils";
 import Link from "next/link";
@@ -26,7 +27,10 @@ export default async function DocumentDetailPage({
 
   if (!doc) notFound();
 
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  const [user, pricing] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    getPricing(),
+  ]);
 
   const overdue = isOverdue(doc);
   const expired = isExpired(doc);
@@ -97,6 +101,9 @@ export default async function DocumentDetailPage({
         convertedToId={doc.convertedToId}
         unlocked={unlocked}
         userEmail={user?.email ?? undefined}
+        docPriceUsd={pricing.docPriceUsd}
+        proMonthlyUsd={pricing.proMonthlyUsd}
+        proMonthlyDocs={pricing.proMonthlyDocs}
       />
 
       <DocumentPreview
