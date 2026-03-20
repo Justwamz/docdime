@@ -84,12 +84,12 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <Card key={stat.label}>
-            <CardContent className="pt-5">
+            <CardContent className="pt-5 min-w-0">
               <div className={`inline-flex p-2 rounded-lg text-xl mb-3 ${stat.color}`}>
                 {stat.icon}
               </div>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+              <p className="text-sm text-gray-500 truncate">{stat.label}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1 break-words leading-tight">{stat.value}</p>
             </CardContent>
           </Card>
         ))}
