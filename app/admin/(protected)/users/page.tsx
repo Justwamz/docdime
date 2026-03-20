@@ -19,7 +19,27 @@ export default async function AdminUsersPage() {
       <h1 className="text-2xl font-bold text-gray-900">Users ({users.length})</h1>
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Mobile cards */}
+          <div className="sm:hidden divide-y divide-gray-100">
+            {users.map((u) => (
+              <div key={u.id} className="px-4 py-3 space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-900 truncate">{u.email}</p>
+                  <Badge variant={u.plan === "PRO" ? "success" : "gray"}>{u.plan}</Badge>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <span>{u.name ?? "—"}</span>
+                  <span>·</span>
+                  <span>{u.country}</span>
+                  <span>·</span>
+                  <span>{u._count.documents} docs</span>
+                </div>
+                <p className="text-xs text-gray-400">{formatDate(u.createdAt)}</p>
+              </div>
+            ))}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
                 <tr>
