@@ -119,23 +119,23 @@ export default async function AdminDashboardPage() {
               ))}
             </div>
             {/* Desktop table */}
-            <div className="hidden sm:block">
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
                   <tr>
                     <th className="px-4 py-3 text-left">Email</th>
                     <th className="px-4 py-3 text-left">Plan</th>
-                    <th className="px-4 py-3 text-left">Joined</th>
+                    <th className="px-4 py-3 text-left whitespace-nowrap">Joined</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {recentUsers.map((u) => (
                     <tr key={u.id}>
-                      <td className="px-4 py-3 text-gray-600">{u.email}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate">{u.email}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <Badge variant={u.plan === "PRO" ? "success" : "gray"}>{u.plan}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{formatDate(u.createdAt)}</td>
+                      <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(u.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
