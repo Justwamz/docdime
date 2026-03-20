@@ -139,6 +139,12 @@ async function main() {
       body: "<p>A new customer has been added on DocDime.</p><ul><li><strong>Customer:</strong> {{customerName}}</li><li><strong>Email:</strong> {{customerEmail}}</li><li><strong>Added by:</strong> {{userName}} ({{businessName}})</li></ul>",
       variables: ["customerName", "customerEmail", "businessName", "userName"],
     },
+    {
+      name: "staff_welcome",
+      subject: "You've been added to the DocDime admin panel",
+      body: "<p>Hi {{name}},</p><p>An admin account has been created for you on DocDime. Here are your login credentials:</p><ul><li><strong>Email:</strong> {{email}}</li><li><strong>Password:</strong> {{password}}</li></ul><p>Log in at: <a href=\"{{loginUrl}}\">{{loginUrl}}</a></p><p>Please change your password after your first login.</p><p>The DocDime Team</p>",
+      variables: ["name", "email", "password", "loginUrl"],
+    },
   ];
 
   for (const template of newTemplates) {

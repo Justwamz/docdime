@@ -150,6 +150,20 @@ export async function triggerInvoiceOverdueEmail(
   });
 }
 
+export async function triggerStaffWelcomeEmail(user: {
+  email: string;
+  name: string | null;
+  password: string;
+}) {
+  const loginUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/login`;
+  await sendTemplateEmail("staff_welcome", user.email, {
+    name: user.name ?? user.email,
+    email: user.email,
+    password: user.password,
+    loginUrl,
+  });
+}
+
 export async function triggerQuoteExpiringEmail(
   doc: {
     docNumber: string;

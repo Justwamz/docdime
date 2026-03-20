@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { triggerStaffWelcomeEmail } from "@/lib/email-triggers";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -35,6 +36,8 @@ export async function POST(req: Request) {
     data: { name, email, password: hashed, isAdmin: true, plan: "PRO" },
     select: { id: true, name: true, email: true, createdAt: true },
   });
+
+  triggerStaffWelcomeEmail({ email, name, password }).catch(() => {});
 
   return NextResponse.json({ success: true, data: user }, { status: 201 });
 }
