@@ -93,22 +93,37 @@ export function computeLineTaxes(
       : selection.items;
 
   let runningExclusiveSum = 0;
-  const itemAmounts: number[] = items.map((t) => {
-    let amount: number;
-    if (t.isInclusive) {
-      // Inclusive: extracted from price, does not add to total
-      amount = (base * t.rate) / (100 + t.rate);
-    } else if (isCompoundGroup) {
-      // Compound: apply on base + all previous exclusive amounts (tax-on-tax)
-      amount = ((base + runningExclusiveSum) * t.rate) / 100;
-      runningExclusiveSum += amount;
-    } else {
-      // Simple: apply on base independently
-      amount = (base * t.rate) / 100;
-      runningExclusiveSum += amount;
-    }
-    return Math.round(amount * 100) / 100;
-  });
+  const itemAmounts: number[] = new Array(items.length).fill(0);
+
+  if (isCompoundGroup && items.every((t) => t.isInclusive)) {
+    // Compound inclusive: retail = trueBase × Π(1 + rate_i/100)
+    // Work backwards to find trueBase, then distribute forward
+    const factor = items.reduce((f, t) => f * (1 + t.rate / 100), 1);
+    let running = base / factor; // true pre-tax base
+    items.forEach((t, i) => {
+      const amount = (running * t.rate) / 100;
+      itemAmounts[i] = Math.round(amount * 100) / 100;
+      running += amount;
+    });
+    // runningExclusiveSum stays 0 — taxes are embedded in retail price, total unchanged
+  } else {
+    items.forEach((t, i) => {
+      let amount: number;
+      if (t.isInclusive) {
+        // Simple inclusive: extract from original base, does not add to total
+        amount = (base * t.rate) / (100 + t.rate);
+      } else if (isCompoundGroup) {
+        // Compound exclusive: apply on base + all previous exclusive amounts (tax-on-tax)
+        amount = ((base + runningExclusiveSum) * t.rate) / 100;
+        runningExclusiveSum += amount;
+      } else {
+        // Simple exclusive: apply on base independently
+        amount = (base * t.rate) / 100;
+        runningExclusiveSum += amount;
+      }
+      itemAmounts[i] = Math.round(amount * 100) / 100;
+    });
+  }
 
   const totalTax = runningExclusiveSum;
   const effectiveRate = base > 0 ? (totalTax / base) * 100 : 0;
