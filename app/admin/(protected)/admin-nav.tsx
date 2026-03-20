@@ -9,6 +9,7 @@ const adminNav = [
   { href: "/admin/transactions", label: "Transactions" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/email-templates", label: "Email Templates" },
+  { href: "/admin/team", label: "Team" },
   { href: "/admin/settings", label: "Settings" },
 ];
 
