@@ -1,8 +1,5 @@
 import { Resend } from "resend";
 import { prisma } from "./prisma";
-import { formatCurrency } from "./utils";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendEmail({
   to,
@@ -17,6 +14,7 @@ export async function sendEmail({
     console.log("[Email stub] Would send:", { to, subject });
     return;
   }
+  const resend = new Resend(process.env.RESEND_API_KEY);
   await resend.emails.send({
     from: "DocDime <noreply@docdime.com>",
     to,
