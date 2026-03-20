@@ -88,25 +88,26 @@ export function startCronJobs() {
     }
   });
 
-  // Daily at 10am: Subscription expiry reminders
+  // Daily at 10am: Downgrade expired PRO subscriptions to PAY_PER_USE
   cron.schedule("0 10 * * *", async () => {
     console.log("[Cron] Checking subscription expiry...");
     try {
       const now = new Date();
-      const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const sevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const expiring = await prisma.user.findMany({
+      const result = await prisma.user.updateMany({
         where: {
           plan: "PRO",
-          proExpiresAt: {
-            gte: now,
-            lte: thirtyDays,
-          },
+          proExpiresAt: { lt: now },
+        },
+        data: {
+          plan: "PAY_PER_USE",
+          docsThisMonth: 0,
         },
       });
 
-      console.log(`[Cron] Found ${expiring.length} expiring subscriptions`);
+      if (result.count > 0) {
+        console.log(`[Cron] Downgraded ${result.count} expired PRO subscriptions to PAY_PER_USE`);
+      }
     } catch (error) {
       console.error("[Cron] Subscription expiry check error:", error);
     }

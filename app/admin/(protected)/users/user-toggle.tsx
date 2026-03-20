@@ -3,45 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function UserToggle({
-  userId,
-  isActive,
-}: {
-  userId: string;
-  isActive: boolean;
-}) {
+export default function UserDowngrade({ userId }: { userId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [active, setActive] = useState(isActive);
 
-  async function toggle() {
+  async function handleDowngrade() {
+    if (!confirm("Downgrade this user to Pay Per Use? Their PRO access will end immediately.")) return;
     setLoading(true);
-    const res = await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !active }),
-    });
-    if (res.ok) {
-      setActive(!active);
-      router.refresh();
-    }
+    await fetch(`/api/admin/users/${userId}`, { method: "PATCH" });
     setLoading(false);
+    router.refresh();
   }
 
   return (
     <button
-      onClick={toggle}
+      onClick={handleDowngrade}
       disabled={loading}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-        active ? "bg-blue-600" : "bg-gray-300"
-      }`}
-      title={active ? "Deactivate user" : "Activate user"}
+      className="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50 whitespace-nowrap"
     >
-      <span
-        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200 ${
-          active ? "translate-x-4" : "translate-x-0"
-        }`}
-      />
+      {loading ? "..." : "Downgrade"}
     </button>
   );
 }
