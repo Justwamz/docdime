@@ -170,7 +170,7 @@ export default async function DashboardPage() {
             <div>
               <p className="font-semibold text-blue-900">Upgrade to Pro</p>
               <p className="text-sm text-blue-700 mt-0.5">
-                Get 20 free documents/month for only $1/month ($12/year).
+                Get 20 free documents/month for only $2/month ($20/year).
               </p>
             </div>
             <Link href="/dashboard/subscription">

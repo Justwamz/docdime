@@ -180,7 +180,7 @@ export default function OnboardingPage() {
                   <ul className="list-disc ml-4 mt-2 space-y-1">
                     <li>DocDime&apos;s <a href="/terms" className="text-blue-600 underline" target="_blank">Terms of Service</a></li>
                     <li>Our <a href="/privacy" className="text-blue-600 underline" target="_blank">Privacy Policy</a></li>
-                    <li>Pay-per-use pricing ($0.11/document) or Pro plan charges</li>
+                    <li>Pay-per-use pricing ($0.10/document) or Pro plan charges ($20/year)</li>
                     <li>Receiving transactional emails</li>
                   </ul>
                 </div>

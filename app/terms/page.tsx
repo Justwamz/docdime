@@ -29,7 +29,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-2">3. Payments & Refunds</h2>
-            <p>Pay-per-use charges ($0.11/document) are non-refundable once a PDF has been generated. Pro plan subscriptions are billed annually and cancellable with access until the end of the billing period. Refund requests reviewed on a case-by-case basis.</p>
+            <p>Pay-per-use charges ($0.10/document) are non-refundable once a PDF has been generated. Pro plan subscriptions ($20/year) are billed annually and cancellable with access until the end of the billing period. Refund requests reviewed on a case-by-case basis.</p>
           </section>
 
           <section>

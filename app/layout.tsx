@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: "%s | DocDime",
   },
   description:
-    "Create professional invoices, quotes, and purchase orders in minutes. Pay only $0.11/doc or go Pro for $1/month.",
+    "Create professional invoices, quotes, and purchase orders in minutes. Pay only $0.10/doc or go Pro for $2/month.",
   keywords: [
     "invoice generator",
     "quote generator",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     siteName: "DocDime",
     title: "DocDime — Professional Business Document Generator",
     description:
-      "Create professional invoices, quotes, and purchase orders in minutes. Pay only $0.11/doc or go Pro for $1/month.",
+      "Create professional invoices, quotes, and purchase orders in minutes. Pay only $0.10/doc or go Pro for $2/month.",
   },
   twitter: {
     card: "summary_large_image",

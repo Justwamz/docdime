@@ -316,7 +316,7 @@ export default function NewDocumentPage() {
           Save Draft
         </Button>
         <Button onClick={handleGeneratePDF} loading={loading} className="w-full sm:w-auto">
-          Generate PDF — $0.11
+          Generate PDF — $0.10
         </Button>
       </div>
     </div>

@@ -13,8 +13,8 @@ DocDime helps businesses create professional Invoices, Quotes, and Purchase Orde
 
 | Tier | Price | Features |
 |------|-------|----------|
-| Pay-per-document | $0.11 / document | Subtle security watermark, full feature access |
-| Pro | $1/month ($12/year) | No watermarks, 20 free documents/month, overages at $0.11 |
+| Pay-per-document | $0.10 / document | QR verification code in PDF, full feature access |
+| Pro | $2/month ($20/year, save 17%) | No watermarks, 20 free documents/month, overages at $0.10 |
 
 **Security feature:** Before payment, all header information (logo, business details, customer info, document number) is hidden in the preview. Only line items are visible. This prevents unpaid screenshot abuse.
 

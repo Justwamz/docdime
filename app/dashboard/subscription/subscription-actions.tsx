@@ -75,7 +75,7 @@ export default function SubscriptionActions({
   if (action === "upgrade") {
     return (
       <Button className="mt-4 w-full" onClick={handleUpgrade} loading={loading}>
-        Upgrade to Pro — $12/year
+        Upgrade to Pro — $20/year
       </Button>
     );
   }

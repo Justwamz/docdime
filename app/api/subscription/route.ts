@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { verifyPayment, generateReference } from "@/lib/paystack";
 
-const PRO_ANNUAL_USD = 12;
+const PRO_ANNUAL_USD = 20;
 
 export async function GET() {
   try {

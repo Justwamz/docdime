@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/footer";
 export const metadata: Metadata = {
   title: "DocDime — Professional Business Document Generator",
   description:
-    "Create professional invoices, quotes, and purchase orders in minutes. Pay $0.11/doc or go Pro at $1/month ($12/year). No subscriptions required.",
+    "Create professional invoices, quotes, and purchase orders in minutes. Pay $0.10/doc or go Pro at $2/month ($20/year). No subscriptions required.",
   other: {
     "application/ld+json": JSON.stringify([
       {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
         applicationCategory: "BusinessApplication",
         offers: {
           "@type": "Offer",
-          price: "0.11",
+          price: "0.10",
           priceCurrency: "USD",
           description: "Pay per document",
         },
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
             name: "How much does DocDime cost?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "DocDime offers pay-per-use at $0.11 per document, or a Pro plan at $1/month ($12/year) which includes 20 free documents per month.",
+              text: "DocDime offers pay-per-use at $0.10 per document, or a Pro plan at $2/month ($20/year, save 17%) which includes 20 free documents per month.",
             },
           },
           {
@@ -61,7 +61,7 @@ const features = [
     icon: "💰",
     title: "Pay Only What You Use",
     description:
-      "No monthly lock-in. Pay $0.11 per document or upgrade to Pro for $1/month.",
+      "No monthly lock-in. Pay $0.10 per document or upgrade to Pro for $2/month.",
   },
   {
     icon: "🌍",
@@ -93,7 +93,7 @@ const steps = [
   { step: "1", title: "Create Account", desc: "Sign up free — no credit card required." },
   { step: "2", title: "Add Your Business", desc: "Enter your business details and banking info." },
   { step: "3", title: "Create a Document", desc: "Fill in customer, line items, and tax details." },
-  { step: "4", title: "Pay & Download", desc: "Pay $0.11 and get your professional PDF instantly." },
+  { step: "4", title: "Pay & Download", desc: "Pay $0.10 and get your professional PDF instantly." },
 ];
 
 const faqs = [
@@ -129,7 +129,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 rounded-full px-4 py-1.5 text-sm font-medium mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 inline-block"></span>
-            Pay $0.11/doc — No subscriptions required
+            Pay $0.10/doc — No subscriptions required
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
             Professional Business
@@ -163,8 +163,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
             {[
-              { value: "$0.11", label: "Per document" },
-              { value: "$1/mo", label: "Pro plan" },
+              { value: "$0.10", label: "Per document" },
+              { value: "$2/mo", label: "Pro plan" },
               { value: "30+", label: "Currencies supported" },
               { value: "3", label: "Document types" },
             ].map((stat) => (
@@ -236,7 +236,7 @@ export default function LandingPage() {
             <div className="bg-white rounded-2xl border border-gray-200 p-8">
               <h3 className="text-xl font-semibold text-gray-900">Pay Per Use</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-5xl font-bold text-gray-900">$0.11</span>
+                <span className="text-5xl font-bold text-gray-900">$0.10</span>
                 <span className="text-gray-500">/ document</span>
               </div>
               <p className="mt-3 text-gray-500 text-sm">
@@ -273,12 +273,12 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-semibold">Pro Plan</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-5xl font-bold">$1</span>
+                <span className="text-5xl font-bold">$2</span>
                 <span className="text-blue-200">/ month</span>
               </div>
-              <p className="text-blue-200 text-sm">Billed annually at $12/year</p>
+              <p className="text-blue-200 text-sm">$20/year (save 17% vs monthly)</p>
               <p className="mt-3 text-blue-100 text-sm">
-                20 free documents per month, then $0.11 each.
+                20 free documents per month, then $0.10 each.
               </p>
               <ul className="mt-6 space-y-3">
                 {[

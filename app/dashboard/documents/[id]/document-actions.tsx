@@ -143,7 +143,7 @@ export function DocumentActions({
             onClick={payAndGeneratePDF}
             loading={loading === "pay"}
           >
-            Generate PDF — $0.11
+            Generate PDF — $0.10
           </Button>
         </div>
 
@@ -153,7 +153,7 @@ export function DocumentActions({
             <Link href="/dashboard/subscription" className="font-semibold underline underline-offset-2">
               upgrade to Pro
             </Link>{" "}
-            for $1/month and get 20 free documents monthly.
+            for $2/month and get 20 free documents monthly.
           </p>
         </div>
       </div>

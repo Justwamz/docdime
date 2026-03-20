@@ -50,11 +50,11 @@ export default async function SubscriptionPage() {
               </div>
               {user.plan === "PRO" ? (
                 <p className="text-sm text-gray-500">
-                  $1/month • {user.docsThisMonth}/{20} free docs used this month
+                  $2/month • {user.docsThisMonth}/{20} free docs used this month
                   {user.proExpiresAt && ` • Renews ${formatDate(user.proExpiresAt)}`}
                 </p>
               ) : (
-                <p className="text-sm text-gray-500">$0.11 per document generated</p>
+                <p className="text-sm text-gray-500">$0.10 per document generated</p>
               )}
             </div>
           </div>
@@ -66,7 +66,7 @@ export default async function SubscriptionPage() {
         <Card className={user.plan !== "PRO" ? "border-2 border-gray-200" : "border-2 border-gray-100 opacity-60"}>
           <CardContent className="pt-5">
             <h3 className="font-semibold text-gray-900">Pay Per Use</h3>
-            <p className="text-3xl font-bold mt-2">$0.11<span className="text-sm text-gray-500 font-normal">/doc</span></p>
+            <p className="text-3xl font-bold mt-2">$0.10<span className="text-sm text-gray-500 font-normal">/doc</span></p>
             <p className="text-sm text-gray-500 mt-2">Only pay when you generate a PDF</p>
             {user.plan === "PRO" && (
               <SubscriptionActions action="cancel" />
@@ -77,8 +77,8 @@ export default async function SubscriptionPage() {
         <Card className={user.plan === "PRO" ? "border-2 border-blue-500" : "border-2 border-blue-200"}>
           <CardContent className="pt-5">
             <h3 className="font-semibold text-gray-900">Pro Plan</h3>
-            <p className="text-3xl font-bold mt-2 text-blue-600">$1<span className="text-sm text-gray-500 font-normal">/month</span></p>
-            <p className="text-sm text-gray-500 mt-2">$12/year • 20 free docs/month</p>
+            <p className="text-3xl font-bold mt-2 text-blue-600">$2<span className="text-sm text-gray-500 font-normal">/month</span></p>
+            <p className="text-sm text-gray-500 mt-2">$20/year (save 17%) • 20 free docs/month</p>
             {user.plan !== "PRO" && (
               <SubscriptionActions action="upgrade" email={user.email} />
             )}
