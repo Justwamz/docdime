@@ -1,9 +1,26 @@
+import { prisma } from "./prisma";
+
 const PAYSTACK_BASE = "https://api.paystack.co";
-const SECRET_KEY = process.env.PAYSTACK_SECRET_KEY!;
+
+async function getSecretKey(): Promise<string> {
+  const setting = await prisma.appSettings.findUnique({
+    where: { key: "paystack_secret_key" },
+  });
+  if (setting?.value) return setting.value;
+  return process.env.PAYSTACK_SECRET_KEY ?? "";
+}
+
+export async function getPaystackPublicKey(): Promise<string> {
+  const setting = await prisma.appSettings.findUnique({
+    where: { key: "paystack_public_key" },
+  });
+  if (setting?.value) return setting.value;
+  return process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "";
+}
 
 interface InitializePaymentParams {
   email: string;
-  amount: number; // in kobo/cents (amount * 100)
+  amount: number;
   currency?: string;
   reference?: string;
   metadata?: Record<string, unknown>;
@@ -29,51 +46,41 @@ interface VerifyData {
   currency: string;
   paid_at: string;
   metadata?: Record<string, unknown>;
-  customer: {
-    email: string;
-  };
+  customer: { email: string };
 }
 
 export async function initializePayment(
   params: InitializePaymentParams
 ): Promise<InitializeData> {
+  const secretKey = await getSecretKey();
   const response = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SECRET_KEY}`,
+      Authorization: `Bearer ${secretKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       ...params,
-      amount: Math.round(params.amount * 100), // convert to kobo/cents
+      amount: Math.round(params.amount * 100),
     }),
   });
 
   const result: PaystackResponse<InitializeData> = await response.json();
-
-  if (!result.status) {
-    throw new Error(result.message || "Payment initialization failed");
-  }
-
+  if (!result.status) throw new Error(result.message || "Payment initialization failed");
   return result.data;
 }
 
 export async function verifyPayment(reference: string): Promise<VerifyData> {
+  const secretKey = await getSecretKey();
   const response = await fetch(
     `${PAYSTACK_BASE}/transaction/verify/${reference}`,
     {
-      headers: {
-        Authorization: `Bearer ${SECRET_KEY}`,
-      },
+      headers: { Authorization: `Bearer ${secretKey}` },
     }
   );
 
   const result: PaystackResponse<VerifyData> = await response.json();
-
-  if (!result.status) {
-    throw new Error(result.message || "Payment verification failed");
-  }
-
+  if (!result.status) throw new Error(result.message || "Payment verification failed");
   return result.data;
 }
 

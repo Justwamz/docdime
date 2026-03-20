@@ -16,10 +16,12 @@ export default function SubscriptionActions({
   action,
   email,
   proAnnualUsd = 20,
+  paystackPublicKey,
 }: {
   action: "upgrade" | "cancel";
   email?: string;
   proAnnualUsd?: number;
+  paystackPublicKey?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function SubscriptionActions({
     script.src = "https://js.paystack.co/v1/inline.js";
     script.onload = () => {
       const handler = window.PaystackPop.setup({
-        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
+        key: paystackPublicKey || process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
         email,
         amount: data.amountInKobo,
         currency: "USD",

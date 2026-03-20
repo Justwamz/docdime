@@ -159,6 +159,10 @@ async function main() {
     { key: "pro_monthly_docs", value: "20" },
     { key: "maintenance_mode", value: "false" },
     { key: "admin_notification_email", value: "waweru@kappanetics.com" },
+    { key: "resend_api_key", value: "" },
+    { key: "resend_from_email", value: "DocDime <noreply@docdime.com>" },
+    { key: "paystack_secret_key", value: "" },
+    { key: "paystack_public_key", value: "" },
   ];
 
   for (const setting of settings) {

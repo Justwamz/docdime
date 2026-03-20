@@ -1,6 +1,16 @@
 import { Resend } from "resend";
 import { prisma } from "./prisma";
 
+async function getResendConfig(): Promise<{ apiKey: string; from: string } | null> {
+  const rows = await prisma.appSettings.findMany({
+    where: { key: { in: ["resend_api_key", "resend_from_email"] } },
+  });
+  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  const apiKey = map.resend_api_key || process.env.RESEND_API_KEY || "";
+  const from = map.resend_from_email || "DocDime <noreply@docdime.com>";
+  return apiKey ? { apiKey, from } : null;
+}
+
 export async function sendEmail({
   to,
   subject,
@@ -10,20 +20,19 @@ export async function sendEmail({
   subject: string;
   html: string;
 }) {
-  if (!process.env.RESEND_API_KEY) {
+  const config = await getResendConfig();
+  if (!config) {
     console.log("[Email stub] Would send:", { to, subject });
     return;
   }
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  await resend.emails.send({
-    from: "DocDime <noreply@docdime.com>",
-    to,
-    subject,
-    html,
-  });
+  const resend = new Resend(config.apiKey);
+  await resend.emails.send({ from: config.from, to, subject, html });
 }
 
-function renderTemplate(template: { subject: string; body: string }, vars: Record<string, string>) {
+function renderTemplate(
+  template: { subject: string; body: string },
+  vars: Record<string, string>
+) {
   let subject = template.subject;
   let body = template.body;
   for (const [key, value] of Object.entries(vars)) {

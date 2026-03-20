@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 import { getPricing } from "@/lib/pricing";
+import { getPaystackPublicKey } from "@/lib/paystack";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SubscriptionActions from "./subscription-actions";
@@ -13,9 +14,10 @@ export default async function SubscriptionPage() {
   const session = await getServerSession(authOptions);
   if (!session) return null;
 
-  const [user, pricing] = await Promise.all([
+  const [user, pricing, paystackPublicKey] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id } }),
     getPricing(),
+    getPaystackPublicKey(),
   ]);
   if (!user) return null;
 
@@ -84,7 +86,7 @@ export default async function SubscriptionPage() {
             <p className="text-3xl font-bold mt-2 text-blue-600">${pricing.proMonthlyUsd}<span className="text-sm text-gray-500 font-normal">/month</span></p>
             <p className="text-sm text-gray-500 mt-2">${pricing.proAnnualUsd}/year (save {pricing.annualDiscountPct}%) • {pricing.proMonthlyDocs} free docs/month</p>
             {user.plan !== "PRO" && (
-              <SubscriptionActions action="upgrade" email={user.email} proAnnualUsd={pricing.proAnnualUsd} />
+              <SubscriptionActions action="upgrade" email={user.email} proAnnualUsd={pricing.proAnnualUsd} paystackPublicKey={paystackPublicKey} />
             )}
             {user.plan === "PRO" && (
               <p className="mt-3 text-sm text-green-600 font-medium">✓ Active plan</p>
