@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+import { triggerCustomerCreatedEmail } from "@/lib/email-triggers";
 
 export async function GET() {
   try {
@@ -30,6 +31,8 @@ export async function POST(req: Request) {
     const customer = await prisma.customer.create({
       data: { userId: session.user.id, name, email, phone, address },
     });
+
+    triggerCustomerCreatedEmail(session.user.id, { name: customer.name, email: customer.email }).catch(() => {});
 
     return NextResponse.json({ success: true, data: customer }, { status: 201 });
   } catch (error) {

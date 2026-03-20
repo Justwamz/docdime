@@ -6,6 +6,7 @@ import { verifyPayment } from "@/lib/paystack";
 import { generatePDF } from "@/lib/pdf";
 import { uploadPDF, getPDFKey } from "@/lib/s3";
 import { Buffer } from "buffer";
+import { triggerPaymentReceivedEmail, triggerPaymentNotifyEmail } from "@/lib/email-triggers";
 
 export async function POST(req: Request) {
   try {
@@ -82,6 +83,20 @@ export async function POST(req: Request) {
       where: { id: documentId },
       data: { pdfUrl },
     });
+
+    triggerPaymentReceivedEmail(
+      { email: user.email, name: user.name },
+      doc.docNumber,
+      doc.total,
+      doc.currency
+    ).catch(() => {});
+
+    triggerPaymentNotifyEmail(
+      { email: user.email, name: user.name },
+      doc.docNumber,
+      doc.total,
+      doc.currency
+    ).catch(() => {});
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {

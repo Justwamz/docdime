@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { verifyPayment, generateReference } from "@/lib/paystack";
+import { triggerProUpgradedEmail } from "@/lib/email-triggers";
 
 const PRO_ANNUAL_USD = 20;
 
@@ -65,6 +66,15 @@ export async function POST(req: Request) {
         where: { id: session.user.id },
         data: { plan: "PRO", proExpiresAt: expiresAt, docsThisMonth: 0 },
       });
+
+      const upgradedUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+      if (upgradedUser) {
+        triggerProUpgradedEmail({
+          email: upgradedUser.email,
+          name: upgradedUser.name,
+          proExpiresAt: upgradedUser.proExpiresAt,
+        }).catch(() => {});
+      }
 
       return NextResponse.json({ success: true, plan: "PRO" });
     }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { triggerWelcomeEmail } from "@/lib/email-triggers";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -32,6 +33,8 @@ export async function POST(req: Request) {
     const user = await prisma.user.create({
       data: { name, email, password: hashed },
     });
+
+    triggerWelcomeEmail({ email: user.email, name: user.name }).catch(() => {});
 
     return NextResponse.json(
       { success: true, data: { id: user.id, email: user.email } },
