@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import UserToggle from "./user-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,10 @@ export default async function AdminUsersPage() {
               <div key={u.id} className="px-4 py-3 space-y-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium text-gray-900 truncate">{u.email}</p>
-                  <Badge variant={u.plan === "PRO" ? "success" : "gray"}>{u.plan}</Badge>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant={u.plan === "PRO" ? "success" : "gray"}>{u.plan}</Badge>
+                    <UserToggle userId={u.id} isActive={u.isActive} />
+                  </div>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <span>{u.name ?? "—"}</span>
@@ -49,6 +53,7 @@ export default async function AdminUsersPage() {
                   <th className="px-4 py-3 text-left">Plan</th>
                   <th className="px-4 py-3 text-left">Docs</th>
                   <th className="px-4 py-3 text-left">Joined</th>
+                  <th className="px-4 py-3 text-left">Active</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -62,6 +67,9 @@ export default async function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">{u._count.documents}</td>
                     <td className="px-4 py-3 text-gray-500">{formatDate(u.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <UserToggle userId={u.id} isActive={u.isActive} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

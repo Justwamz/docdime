@@ -47,6 +47,7 @@ model User {
   currency          String    @default("USD")
   plan              Plan      @default(PAY_PER_USE)
   isAdmin           Boolean   @default(false)
+  isActive          Boolean   @default(true)
   consentGiven      Boolean   @default(false)
   onboardingDone    Boolean   @default(false)
   proExpiresAt      DateTime?
