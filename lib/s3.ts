@@ -81,6 +81,7 @@ export async function uploadLogo(
     Key: key,
     Body: buffer,
     ContentType: contentType,
+    ServerSideEncryption: "AES256",
   });
 
   await s3Client.send(command);
