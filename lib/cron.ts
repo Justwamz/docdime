@@ -1,7 +1,11 @@
 import cron from "node-cron";
 import { prisma } from "./prisma";
-import { sendOverdueEmail } from "./email";
-import { formatCurrency } from "./utils";
+import {
+  triggerInvoiceOverdueEmail,
+  triggerQuoteExpiringEmail,
+  triggerProExpiredEmail,
+  triggerNudgeEmail,
+} from "./email-triggers";
 
 let initialized = false;
 
@@ -22,21 +26,16 @@ export function startCronJobs() {
           dueDate: { lt: new Date() },
           paid: false,
         },
-        include: {
-          user: true,
-          customer: true,
-        },
+        include: { user: true, customer: true },
       });
 
       for (const invoice of overdueInvoices) {
         if (invoice.customer?.email) {
-          await sendOverdueEmail({
-            to: invoice.customer.email,
-            businessName: invoice.user.businessName ?? invoice.user.name ?? "Business",
-            customerName: invoice.customer.name,
-            docNumber: invoice.docNumber,
-            amount: formatCurrency(invoice.total, invoice.currency),
-          });
+          await triggerInvoiceOverdueEmail(
+            { docNumber: invoice.docNumber, total: invoice.total, currency: invoice.currency },
+            { businessName: invoice.user.businessName, name: invoice.user.name },
+            { email: invoice.customer.email, name: invoice.customer.name }
+          );
         }
       }
 
@@ -57,15 +56,20 @@ export function startCronJobs() {
         where: {
           type: "QUOTE",
           status: { in: ["DRAFT", "SENT"] },
-          expiryDate: {
-            gte: new Date(),
-            lte: sevenDaysFromNow,
-          },
+          expiryDate: { gte: new Date(), lte: sevenDaysFromNow },
         },
         include: { user: true, customer: true },
       });
 
-      console.log(`[Cron] Found ${expiringQuotes.length} expiring quotes`);
+      for (const quote of expiringQuotes) {
+        await triggerQuoteExpiringEmail(
+          { docNumber: quote.docNumber, total: quote.total, currency: quote.currency, expiryDate: quote.expiryDate },
+          { businessName: quote.user.businessName, name: quote.user.name },
+          { email: quote.customer?.email ?? null, name: quote.customer?.name ?? "Customer" }
+        );
+      }
+
+      console.log(`[Cron] Processed ${expiringQuotes.length} expiring quotes`);
     } catch (error) {
       console.error("[Cron] Quote expiry check error:", error);
     }
@@ -77,10 +81,7 @@ export function startCronJobs() {
     try {
       await prisma.user.updateMany({
         where: { plan: "PRO" },
-        data: {
-          docsThisMonth: 0,
-          lastDocReset: new Date(),
-        },
+        data: { docsThisMonth: 0, lastDocReset: new Date() },
       });
       console.log("[Cron] Monthly reset complete");
     } catch (error) {
@@ -88,28 +89,67 @@ export function startCronJobs() {
     }
   });
 
-  // Daily at 10am: Downgrade expired PRO subscriptions to PAY_PER_USE
+  // Daily at 10am: Downgrade expired PRO subscriptions + notify users
   cron.schedule("0 10 * * *", async () => {
     console.log("[Cron] Checking subscription expiry...");
     try {
       const now = new Date();
 
-      const result = await prisma.user.updateMany({
-        where: {
-          plan: "PRO",
-          proExpiresAt: { lt: now },
-        },
-        data: {
-          plan: "PAY_PER_USE",
-          docsThisMonth: 0,
-        },
+      // Fetch first so we have user details for the email
+      const expiredUsers = await prisma.user.findMany({
+        where: { plan: "PRO", proExpiresAt: { lt: now } },
       });
 
-      if (result.count > 0) {
-        console.log(`[Cron] Downgraded ${result.count} expired PRO subscriptions to PAY_PER_USE`);
+      if (expiredUsers.length > 0) {
+        await prisma.user.updateMany({
+          where: { plan: "PRO", proExpiresAt: { lt: now } },
+          data: { plan: "PAY_PER_USE", docsThisMonth: 0 },
+        });
+
+        for (const user of expiredUsers) {
+          await triggerProExpiredEmail({ email: user.email, name: user.name });
+        }
+
+        console.log(`[Cron] Downgraded ${expiredUsers.length} expired PRO subscriptions`);
       }
     } catch (error) {
       console.error("[Cron] Subscription expiry check error:", error);
+    }
+  });
+
+  // Daily at 11am: Nudge users who signed up N days ago with no documents
+  cron.schedule("0 11 * * *", async () => {
+    console.log("[Cron] Checking nudge emails...");
+    try {
+      const now = new Date();
+
+      for (const days of [3, 7, 14, 21, 30] as const) {
+        // startOfDay helpers (no external dependency)
+        const start = new Date(now);
+        start.setDate(start.getDate() - days);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(start);
+        end.setDate(end.getDate() + 1);
+
+        const users = await prisma.user.findMany({
+          where: {
+            isAdmin: false,
+            createdAt: { gte: start, lt: end },
+            documents: { none: {} },
+          },
+        });
+
+        for (const user of users) {
+          await triggerNudgeEmail({ email: user.email, name: user.name }, days);
+        }
+
+        if (users.length > 0) {
+          console.log(`[Cron] Sent ${days}-day nudge to ${users.length} users`);
+        }
+      }
+    } catch (error) {
+      console.error("[Cron] Nudge check error:", error);
     }
   });
 
