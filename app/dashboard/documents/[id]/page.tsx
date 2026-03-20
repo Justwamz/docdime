@@ -31,6 +31,9 @@ export default async function DocumentDetailPage({
   const overdue = isOverdue(doc);
   const expired = isExpired(doc);
 
+  // Unlocked: PRO users always have access; PAY_PER_USE users unlock per-doc after payment (pdfUrl is set)
+  const unlocked = user?.plan === "PRO" || !!doc.pdfUrl;
+
   const docForDisplay: Document = {
     id: doc.id,
     type: doc.type as Document["type"],
@@ -92,6 +95,8 @@ export default async function DocumentDetailPage({
         docStatus={doc.status}
         pdfUrl={doc.pdfUrl ?? undefined}
         convertedToId={doc.convertedToId}
+        unlocked={unlocked}
+        userEmail={user?.email ?? undefined}
       />
 
       <DocumentPreview
@@ -99,6 +104,7 @@ export default async function DocumentDetailPage({
         businessName={user?.businessName ?? user?.name ?? ""}
         businessEmail={user?.businessEmail ?? undefined}
         businessAddress={user?.businessAddress ?? undefined}
+        locked={!unlocked}
       />
     </div>
   );

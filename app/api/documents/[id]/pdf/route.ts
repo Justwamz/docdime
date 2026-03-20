@@ -21,6 +21,11 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     const user = await prisma.user.findUnique({ where: { id: session.user.id } });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+    // PAY_PER_USE users must go through the payment flow (/api/payment/verify generates the PDF)
+    if (user.plan !== "PRO") {
+      return NextResponse.json({ error: "Payment required to generate PDF" }, { status: 402 });
+    }
+
     const pdfBytes = await generatePDF({
       docNumber: doc.docNumber,
       type: doc.type,

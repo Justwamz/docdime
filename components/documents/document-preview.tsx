@@ -10,6 +10,7 @@ interface DocumentPreviewProps {
   businessEmail?: string;
   businessAddress?: string;
   hideHeader?: boolean;
+  locked?: boolean;
 }
 
 export function DocumentPreview({
@@ -18,6 +19,7 @@ export function DocumentPreview({
   businessEmail,
   businessAddress,
   hideHeader = false,
+  locked = false,
 }: DocumentPreviewProps) {
   const typeLabel =
     document.type === "INVOICE"
@@ -25,6 +27,68 @@ export function DocumentPreview({
       : document.type === "QUOTE"
       ? "QUOTE"
       : "PURCHASE ORDER";
+
+  if (locked) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {/* Paywall notice */}
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-3">
+          <svg className="w-4 h-4 text-amber-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
+          <p className="text-sm text-amber-800">
+            Generate a PDF to unlock the full formatted document — your business details, customer info, and branding will be included.
+          </p>
+        </div>
+
+        <div className="px-8 py-6 space-y-6">
+          {/* Line items only */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-4 py-2 text-gray-500 font-medium">Description</th>
+                  <th className="text-right px-4 py-2 text-gray-500 font-medium">Qty</th>
+                  <th className="text-right px-4 py-2 text-gray-500 font-medium">Unit Price</th>
+                  <th className="text-right px-4 py-2 text-gray-500 font-medium">Tax</th>
+                  <th className="text-right px-4 py-2 text-gray-500 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {document.lineItems.map((item, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3 text-gray-900">{item.description}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{item.quantity}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(item.unitPrice, document.currency)}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{item.taxRate}%</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-900">{formatCurrency(item.total, document.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Totals */}
+          <div className="flex justify-end">
+            <div className="w-56 space-y-2">
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Subtotal</span>
+                <span>{formatCurrency(document.subtotal, document.currency)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Tax</span>
+                <span>{formatCurrency(document.taxAmount, document.currency)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-2">
+                <span>Total</span>
+                <span className="text-blue-600">{formatCurrency(document.total, document.currency)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
