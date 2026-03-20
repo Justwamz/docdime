@@ -77,12 +77,14 @@ export async function POST(req: Request) {
             quantity: number;
             unitPrice: number;
             taxRate: number;
+            appliedTaxes?: unknown;
             total: number;
           }) => ({
             description: item.description,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             taxRate: item.taxRate,
+            appliedTaxes: item.appliedTaxes ?? null,
             total: item.total,
           })),
         },
