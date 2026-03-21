@@ -3,11 +3,22 @@
     "allow": [
       "Bash(find C:/Users/kenneth.wamunyu/Desktop/Wawesh/DocDime/app/api -name *.ts)",
       "Bash(npx tsc:*)",
-      "Bash(aws --version)"
+      "Bash(aws --version)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d.get\\(''''dependencies'''',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(ls \"c:/Users/kenneth.wamunyu/Desktop/Wawesh/DocDime/app/admin/\\(protected\\)/email-templates/\")",
+      "Bash(xargs grep:*)",
+      "Bash(npm audit:*)",
+      "Bash(dir \"C:\\\\Users\\\\kenneth.wamunyu\\\\Desktop\\\\Wawesh\\\\DocDime\\\\public\")",
+      "Read(//mnt/c/Users/kenneth.wamunyu/Desktop/Wawesh/DocDime/**)",
+      "Bash(npx web-push:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\docs\\superpowers",
-      "C:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\api\\tax-groups"
+      "C:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\api\\tax-groups",
+      "c:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\verify",
+      "c:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\api\\admin\\users\\[id]",
+      "c:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\api\\documents\\[id]",
+      "c:\\Users\\kenneth.wamunyu\\Desktop\\Wawesh\\DocDime\\app\\api\\admin\\team"
     ]
   }
 }

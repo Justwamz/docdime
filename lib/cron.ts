@@ -6,6 +6,7 @@ import {
   triggerProExpiredEmail,
   triggerNudgeEmail,
 } from "./email-triggers";
+import { sendPushToUser } from "./push";
 
 let initialized = false;
 
@@ -37,6 +38,12 @@ export function startCronJobs() {
             { email: invoice.customer.email, name: invoice.customer.name }
           );
         }
+        sendPushToUser(invoice.userId, {
+          title: "Invoice Overdue",
+          body: `${invoice.docNumber} is past due. Follow up with your client.`,
+          url: `/dashboard/documents/${invoice.id}`,
+          tag: `overdue-${invoice.id}`,
+        }).catch(() => {});
       }
 
       console.log(`[Cron] Processed ${overdueInvoices.length} overdue invoices`);
@@ -67,6 +74,12 @@ export function startCronJobs() {
           { businessName: quote.user.businessName, name: quote.user.name },
           { email: quote.customer?.email ?? null, name: quote.customer?.name ?? "Customer" }
         );
+        sendPushToUser(quote.userId, {
+          title: "Quote Expiring Soon",
+          body: `${quote.docNumber} expires in 7 days.`,
+          url: `/dashboard/documents/${quote.id}`,
+          tag: `expiring-${quote.id}`,
+        }).catch(() => {});
       }
 
       console.log(`[Cron] Processed ${expiringQuotes.length} expiring quotes`);
@@ -108,6 +121,12 @@ export function startCronJobs() {
 
         for (const user of expiredUsers) {
           await triggerProExpiredEmail({ email: user.email, name: user.name });
+          sendPushToUser(user.id, {
+            title: "DocDime Pro Expired",
+            body: "Your Pro subscription has ended. Renew to keep your monthly free docs.",
+            url: "/dashboard/subscription",
+            tag: "pro-expired",
+          }).catch(() => {});
         }
 
         console.log(`[Cron] Downgraded ${expiredUsers.length} expired PRO subscriptions`);

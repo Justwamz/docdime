@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createHmac } from "crypto";
+import { sendPushToUser } from "@/lib/push";
 
 export async function POST(req: Request) {
   try {
@@ -19,13 +20,26 @@ export async function POST(req: Request) {
     const event = JSON.parse(body);
 
     if (event.event === "charge.success") {
-      const { reference, status, metadata } = event.data;
+      const { reference, status } = event.data;
 
       if (status === "success") {
         await prisma.transaction.updateMany({
           where: { paystackRef: reference },
           data: { status: "SUCCESS" },
         });
+
+        const tx = await prisma.transaction.findFirst({
+          where: { paystackRef: reference },
+          select: { userId: true, documentId: true },
+        });
+        if (tx) {
+          sendPushToUser(tx.userId, {
+            title: "Payment Confirmed",
+            body: "Your document payment was successful. Your PDF is ready.",
+            url: tx.documentId ? `/dashboard/documents/${tx.documentId}` : "/dashboard",
+            tag: `payment-${reference}`,
+          }).catch(() => {});
+        }
       }
     }
 

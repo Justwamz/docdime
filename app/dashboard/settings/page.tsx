@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { countries, getCountryConfig } from "@/lib/countries";
 import { currencies } from "@/lib/currencies";
+import { Switch } from "@/components/ui/switch";
 
 export default function SettingsPage() {
   const { data: session, update } = useSession();
@@ -31,6 +32,77 @@ export default function SettingsPage() {
   const [banking, setBanking] = useState<Record<string, string>>({});
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const [deletePassword, setDeletePassword] = useState("");
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>("default");
+  const [subscribed, setSubscribed] = useState(false);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const arr = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+    return arr;
+  }
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator) {
+      setNotifPermission(Notification.permission);
+      navigator.serviceWorker.ready.then(async (reg) => {
+        const sub = await reg.pushManager.getSubscription();
+        setSubscribed(!!sub);
+      });
+    }
+  }, []);
+
+  async function handleSubscribe() {
+    setNotifLoading(true);
+    setError("");
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifPermission(permission);
+      if (permission !== "granted") return;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""
+        ),
+      });
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub.toJSON()),
+      });
+      setSubscribed(true);
+    } catch {
+      setError("Could not enable notifications. Please try again.");
+    } finally {
+      setNotifLoading(false);
+    }
+  }
+
+  async function handleUnsubscribe() {
+    setNotifLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        const endpoint = sub.endpoint;
+        await sub.unsubscribe();
+        await fetch("/api/push/unsubscribe", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint }),
+        });
+      }
+      setSubscribed(false);
+    } catch {
+      setError("Could not disable notifications.");
+    } finally {
+      setNotifLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then((d) => {
@@ -149,6 +221,7 @@ export default function SettingsPage() {
           <TabsTrigger value="profile">Business Profile</TabsTrigger>
           <TabsTrigger value="banking">Banking</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -311,6 +384,39 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader><CardTitle>Push Notifications</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-500">
+                Receive alerts for overdue invoices, expiring quotes, and payment confirmations directly on your device.
+              </p>
+              {typeof window !== "undefined" && "Notification" in window ? (
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {subscribed ? "Notifications enabled" : "Notifications disabled"}
+                    </p>
+                    {notifPermission === "denied" && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Notifications are blocked in your browser settings. Update your browser permissions to enable them.
+                      </p>
+                    )}
+                  </div>
+                  <Switch
+                    checked={subscribed}
+                    onCheckedChange={subscribed ? handleUnsubscribe : handleSubscribe}
+                    disabled={notifLoading || notifPermission === "denied"}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  Push notifications are not supported in this browser.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

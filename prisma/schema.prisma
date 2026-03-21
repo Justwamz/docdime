@@ -56,11 +56,12 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  documents    Document[]
-  customers    Customer[]
-  taxes        Tax[]
-  taxGroups    TaxGroup[]
-  transactions Transaction[]
+  documents         Document[]
+  customers         Customer[]
+  taxes             Tax[]
+  taxGroups         TaxGroup[]
+  transactions      Transaction[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Customer {
@@ -188,6 +189,19 @@ model AppSettings {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model TaxGroup {
