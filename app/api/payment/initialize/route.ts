@@ -4,9 +4,14 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { initializePayment, generateReference } from "@/lib/paystack";
 import { getPricing } from "@/lib/pricing";
+import { rateLimit, getIp } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    // 10 payment attempts per 10 minutes per IP
+    const { allowed } = rateLimit(`payment:${getIp(req)}`, 10, 10 * 60 * 1000);
+    if (!allowed) return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -47,11 +52,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // If Paystack is not configured (testing mode), generate PDF for free
+    // Fail-closed: if Paystack is not configured, block payment rather than granting free access
     const paystackKey = process.env.PAYSTACK_SECRET_KEY ?? "";
     if (!paystackKey || paystackKey.includes("your_paystack")) {
-      console.log("[Payment] Paystack not configured — generating PDF directly (test mode)");
-      return NextResponse.json({ success: true, free: true, testMode: true });
+      console.error("[Payment] Paystack not configured — payment blocked");
+      return NextResponse.json({ error: "Payment system not configured" }, { status: 503 });
     }
 
     // Initialize Paystack payment

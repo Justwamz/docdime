@@ -181,8 +181,7 @@ async function main() {
 
   console.log("✅ App settings seeded");
   console.log("\n🎉 Seed complete!");
-  console.log("Admin login: admin@docdime.com / Admin@123456");
-  console.log("⚠️  Please change the admin password after first login!");
+  console.log("⚠️  Change the admin password after first login at /admin/login");
 }
 
 main()

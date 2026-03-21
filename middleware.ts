@@ -1,10 +1,23 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
+
+    // Rate limit login attempts: 10 per 15 minutes per IP
+    if (path === "/api/auth/callback/credentials" && req.method === "POST") {
+      const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+        req.headers.get("x-real-ip") ??
+        "unknown";
+      const { allowed } = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000);
+      if (!allowed) {
+        return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
+      }
+    }
 
     // Admin routes require isAdmin flag
     if (path.startsWith("/admin") && !path.startsWith("/admin/login")) {
@@ -47,5 +60,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/onboarding"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/onboarding", "/api/auth/callback/credentials"],
 };

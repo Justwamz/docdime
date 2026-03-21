@@ -30,6 +30,7 @@ export default function SettingsPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [banking, setBanking] = useState<Record<string, string>>({});
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
+  const [deletePassword, setDeletePassword] = useState("");
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then((d) => {
@@ -112,10 +113,20 @@ export default function SettingsPage() {
     a.click();
   }
 
-  async function deleteAccount() {
-    if (!confirm("Are you sure? This cannot be undone. All your data will be permanently deleted.")) return;
-    const res = await fetch("/api/account/delete", { method: "DELETE" });
-    if (res.ok) { window.location.href = "/"; }
+  async function deleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!confirm("Are you absolutely sure? This will permanently delete your account and all data. This cannot be undone.")) return;
+    setLoading(true);
+    setError("");
+    const res = await fetch("/api/account/delete", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: deletePassword }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) { setError(data.error ?? "Failed to delete account"); return; }
+    window.location.href = "/";
   }
 
   return (
@@ -285,7 +296,18 @@ export default function SettingsPage() {
               <CardHeader><CardTitle className="text-red-600">Danger Zone</CardTitle></CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-500 mb-4">Permanently delete your account and all associated data. This cannot be undone.</p>
-                <Button variant="danger" onClick={deleteAccount}>Delete Account</Button>
+                <form onSubmit={deleteAccount} className="space-y-3">
+                  <div>
+                    <Label required>Confirm your password</Label>
+                    <Input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Enter your password to confirm"
+                    />
+                  </div>
+                  <Button type="submit" variant="danger" loading={loading} disabled={!deletePassword}>Delete Account</Button>
+                </form>
               </CardContent>
             </Card>
           </div>
