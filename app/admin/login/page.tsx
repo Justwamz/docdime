@@ -39,10 +39,10 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4">
       <div className="mb-8 text-center">
-        <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3">
-          <span className="text-white font-bold text-lg">D</span>
+        <div className="flex justify-center mb-3">
+          <img src="/logo.png" alt="DocDime" className="h-10 w-auto brightness-0 invert" />
         </div>
-        <h1 className="text-xl font-bold text-white">DocDime Admin</h1>
+        <h1 className="text-xl font-bold text-white">Admin Panel</h1>
       </div>
       <Card className="w-full max-w-sm">
         <CardContent className="pt-6">
