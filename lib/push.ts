@@ -2,18 +2,25 @@
 const webpush = require("web-push") as typeof import("web-push");
 import { prisma } from "./prisma";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:admin@docdime.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? ""
-);
-
 export type PushPayload = {
   title: string;
   body: string;
   url?: string;
   tag?: string;
 };
+
+/** Lazy-initialize VAPID — called inside functions, never at module load time */
+function initVapid() {
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
+  const privateKey = process.env.VAPID_PRIVATE_KEY ?? "";
+  if (!publicKey || !privateKey) return false;
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? "mailto:admin@docdime.com",
+    publicKey,
+    privateKey
+  );
+  return true;
+}
 
 async function sendPushToSubscription(
   id: string,
@@ -22,6 +29,7 @@ async function sendPushToSubscription(
   auth: string,
   payload: PushPayload
 ) {
+  if (!initVapid()) return; // silently skip if not configured
   try {
     await webpush.sendNotification(
       { endpoint, keys: { p256dh, auth } },
