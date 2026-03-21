@@ -33,3 +33,9 @@ services:
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        value: BHHc5xaAhwzO092f2Azg009X0u9sRolnU5tqxNAixPL9ZFCWFHqTYOsaAlUAKmh6XzaBwMFytSvXB_0SQ5iRNMY
+      - key: VAPID_PRIVATE_KEY
+        value: 01dC8GILYCNdUGcDv5x0-l8zDsAoLus-ynsfx1_2P8k
+      - key: VAPID_SUBJECT
+        value: mailto:admin@docdime.com
