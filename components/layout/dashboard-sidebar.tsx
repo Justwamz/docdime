@@ -110,7 +110,10 @@ function DashboardSidebar({
             className="flex items-center gap-2"
             onClick={onClose}
           >
-            <img src="/logo.png" alt="DocDime" className="h-8 w-auto" />
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">D</span>
+            </div>
+            <span className="font-bold text-gray-900 text-lg">DocDime</span>
           </Link>
         </div>
 
@@ -184,8 +187,11 @@ export function DashboardSidebarWrapper() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <Link href="/dashboard" className="ml-3">
-          <img src="/logo.png" alt="DocDime" className="h-7 w-auto" />
+        <Link href="/dashboard" className="flex items-center gap-2 ml-3">
+          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xs">D</span>
+          </div>
+          <span className="font-bold text-gray-900 text-base">DocDime</span>
         </Link>
       </div>
 

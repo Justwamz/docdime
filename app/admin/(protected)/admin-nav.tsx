@@ -21,8 +21,10 @@ export default function AdminNav({ email }: { email: string }) {
       {/* Mobile top bar */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-30 bg-gray-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="DocDime" className="h-6 w-auto brightness-0 invert" />
-          <span className="font-bold text-white text-sm">Admin</span>
+          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xs">D</span>
+          </div>
+          <span className="font-bold text-white text-sm">Admin Panel</span>
         </div>
         <button
           onClick={() => setOpen(!open)}
