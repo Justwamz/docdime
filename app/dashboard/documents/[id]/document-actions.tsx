@@ -22,6 +22,7 @@ interface DocumentActionsProps {
   pdfUrl?: string;
   convertedToId?: string | null;
   unlocked?: boolean;
+  hasPaid?: boolean;
   userEmail?: string;
   docPriceUsd?: number;
   proMonthlyUsd?: number;
@@ -36,6 +37,7 @@ export function DocumentActions({
   pdfUrl,
   convertedToId,
   unlocked = false,
+  hasPaid = false,
   userEmail,
   docPriceUsd = 0.10,
   proMonthlyUsd = 2,
@@ -182,7 +184,7 @@ export function DocumentActions({
     );
   }
 
-  // ── Locked state (PAY_PER_USE, no PDF generated yet) ────────────────────────
+  // ── PAY_PER_USE state ────────────────────────────────────────────────────────
   if (!unlocked) {
     return (
       <div className="space-y-4">
@@ -192,17 +194,27 @@ export function DocumentActions({
             onClick={payAndGeneratePDF}
             loading={loading === "pay"}
           >
-            Generate PDF — ${docPriceUsd.toFixed(2)}
+            {hasPaid ? `Regenerate PDF — $${docPriceUsd.toFixed(2)}` : `Generate PDF — $${docPriceUsd.toFixed(2)}`}
           </Button>
+          {hasPaid && pdfUrl && (
+            <a href={`/api/documents/${docId}/download`} download={`${docNumber}.pdf`}>
+              <Button variant="outline" size="sm">
+                Download PDF
+              </Button>
+            </a>
+          )}
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
           <p className="text-sm text-blue-700">
-            Generate a PDF to get the full formatted document. Alternatively,{" "}
-            <Link href="/dashboard/subscription" className="font-semibold underline underline-offset-2">
-              upgrade to Pro
-            </Link>{" "}
-            for ${proMonthlyUsd}/month and get {proMonthlyDocs} free documents monthly.
+            {hasPaid
+              ? "You've already generated this document. Download above, or pay to regenerate with any updates."
+              : <>Generate a PDF to get the full formatted document. Alternatively,{" "}
+                  <Link href="/dashboard/subscription" className="font-semibold underline underline-offset-2">
+                    upgrade to Pro
+                  </Link>{" "}
+                  for ${proMonthlyUsd}/month and get {proMonthlyDocs} free documents monthly.</>
+            }
           </p>
         </div>
       </div>

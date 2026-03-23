@@ -27,16 +27,22 @@ export default async function DocumentDetailPage({
 
   if (!doc) notFound();
 
-  const [user, pricing] = await Promise.all([
+  const [user, pricing, successfulTx] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id } }),
     getPricing(),
+    prisma.transaction.findFirst({
+      where: { userId: session.user.id, documentId: params.id, status: "SUCCESS" },
+      select: { id: true },
+    }),
   ]);
 
   const overdue = isOverdue(doc);
   const expired = isExpired(doc);
 
-  // Unlocked: PRO users always have access; PAY_PER_USE users unlock per-doc after payment (pdfUrl is set)
-  const unlocked = user?.plan === "PRO" || !!doc.pdfUrl;
+  // Unlocked: PRO subscription only. PAY_PER_USE users must pay each time.
+  // hasPaid: PAY_PER_USE users with a successful transaction can re-download their PDF.
+  const unlocked = user?.plan === "PRO";
+  const hasPaid = !unlocked && !!successfulTx && !!doc.pdfUrl;
 
   const docForDisplay: Document = {
     id: doc.id,
@@ -100,6 +106,7 @@ export default async function DocumentDetailPage({
         pdfUrl={doc.pdfUrl ?? undefined}
         convertedToId={doc.convertedToId}
         unlocked={unlocked}
+        hasPaid={hasPaid}
         userEmail={user?.email ?? undefined}
         docPriceUsd={pricing.docPriceUsd}
         proMonthlyUsd={pricing.proMonthlyUsd}
@@ -108,7 +115,7 @@ export default async function DocumentDetailPage({
 
       <DocumentPreview
         document={docForDisplay}
-        locked={true}
+        locked={!unlocked && !hasPaid}
       />
     </div>
   );

@@ -16,6 +16,20 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Require PRO plan or a successful payment transaction for this document
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { plan: true },
+  });
+  if (user?.plan !== "PRO") {
+    const successfulTx = await prisma.transaction.findFirst({
+      where: { userId: session.user.id, documentId: params.id, status: "SUCCESS" },
+    });
+    if (!successfulTx) {
+      return NextResponse.json({ error: "Payment required" }, { status: 402 });
+    }
+  }
+
   const filename = `${doc.docNumber}.pdf`;
 
   // Data URL (S3 not configured) — decode base64 and stream back
