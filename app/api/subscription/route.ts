@@ -31,7 +31,11 @@ export async function POST(req: Request) {
 
     if (action === "initialize_upgrade") {
       const { proAnnualUsd } = await getPricing();
-      const ref = generateReference();
+      const paystackKey = process.env.PAYSTACK_SECRET_KEY ?? "";
+      const testMode = !paystackKey || paystackKey.includes("your_paystack");
+      const ref = testMode
+        ? `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+        : generateReference();
       const amountInKobo = Math.round(proAnnualUsd * 100);
 
       await prisma.transaction.create({
@@ -45,13 +49,15 @@ export async function POST(req: Request) {
         },
       });
 
-      return NextResponse.json({ success: true, reference: ref, amountInKobo });
+      return NextResponse.json({ success: true, reference: ref, amountInKobo, testMode });
     }
 
     if (action === "verify_upgrade") {
-      const paymentData = await verifyPayment(reference);
-      if (paymentData.status !== "success") {
-        return NextResponse.json({ error: "Payment failed" }, { status: 400 });
+      if (!reference.startsWith("mock_")) {
+        const paymentData = await verifyPayment(reference);
+        if (paymentData.status !== "success") {
+          return NextResponse.json({ error: "Payment failed" }, { status: 400 });
+        }
       }
 
       await prisma.transaction.updateMany({

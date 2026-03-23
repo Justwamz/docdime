@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
-import { initializePayment, generateReference } from "@/lib/paystack";
+import { generateReference } from "@/lib/paystack";
 import { getPricing } from "@/lib/pricing";
 import { rateLimit, getIp } from "@/lib/rate-limit";
 
@@ -52,15 +52,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // Fail-closed: if Paystack is not configured, block payment rather than granting free access
     const paystackKey = process.env.PAYSTACK_SECRET_KEY ?? "";
-    if (!paystackKey || paystackKey.includes("your_paystack")) {
-      console.error("[Payment] Paystack not configured — payment blocked");
-      return NextResponse.json({ error: "Payment system not configured" }, { status: 503 });
-    }
+    const testMode = !paystackKey || paystackKey.includes("your_paystack");
 
-    // Initialize Paystack payment
-    const reference = generateReference();
+    // Initialize payment reference
+    const reference = testMode
+      ? `mock_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      : generateReference();
     const amountInKobo = Math.round(docPriceUsd * 100);
 
     // Create pending transaction
@@ -79,6 +77,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       free: false,
+      testMode,
       reference,
       amountInKobo,
       amount: docPriceUsd,

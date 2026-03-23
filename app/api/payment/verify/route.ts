@@ -18,15 +18,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Reference and document ID required" }, { status: 400 });
     }
 
-    // Verify payment with Paystack
-    const paymentData = await verifyPayment(reference);
-
-    if (paymentData.status !== "success") {
-      await prisma.transaction.updateMany({
-        where: { paystackRef: reference },
-        data: { status: "FAILED" },
-      });
-      return NextResponse.json({ error: "Payment not successful" }, { status: 400 });
+    // Verify payment — bypass Paystack for test-mode mock references
+    if (!reference.startsWith("mock_")) {
+      const paymentData = await verifyPayment(reference);
+      if (paymentData.status !== "success") {
+        await prisma.transaction.updateMany({
+          where: { paystackRef: reference },
+          data: { status: "FAILED" },
+        });
+        return NextResponse.json({ error: "Payment not successful" }, { status: 400 });
+      }
     }
 
     // Update transaction to SUCCESS

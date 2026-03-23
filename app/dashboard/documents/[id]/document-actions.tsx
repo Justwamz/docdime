@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { MockPaystackModal } from "@/components/paystack/mock-paystack-modal";
 
 declare global {
   interface Window {
@@ -42,6 +43,10 @@ export function DocumentActions({
 }: DocumentActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [mockPayment, setMockPayment] = useState<{
+    reference: string;
+    amountInKobo: number;
+  } | null>(null);
 
   async function updateStatus(status: string) {
     setLoading(status);
@@ -96,7 +101,14 @@ export function DocumentActions({
       return;
     }
 
-    // Load Paystack and open payment popup
+    // Test mode — show mock Paystack modal
+    if (data.testMode) {
+      setMockPayment({ reference: data.reference, amountInKobo: data.amountInKobo });
+      setLoading(null);
+      return;
+    }
+
+    // Load real Paystack and open payment popup
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.onload = () => {
@@ -127,6 +139,23 @@ export function DocumentActions({
     document.body.appendChild(script);
   }
 
+  async function handleMockPaymentSuccess(reference: string) {
+    setMockPayment(null);
+    setLoading("pay");
+    const verifyRes = await fetch("/api/payment/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference, documentId: docId }),
+    });
+    const verifyData = await verifyRes.json();
+    setLoading(null);
+    if (verifyData.success) {
+      router.refresh();
+    } else {
+      alert("Payment processed but PDF generation failed. Contact support.");
+    }
+  }
+
   async function convertToInvoice() {
     setLoading("convert");
     const res = await fetch(`/api/documents/${docId}/convert`, {
@@ -137,6 +166,20 @@ export function DocumentActions({
     if (data.success && data.data?.id) {
       router.push(`/dashboard/documents/${data.data.id}`);
     }
+  }
+
+  // ── Mock payment modal ───────────────────────────────────────────────────────
+  if (mockPayment) {
+    return (
+      <MockPaystackModal
+        email={userEmail ?? ""}
+        amount={mockPayment.amountInKobo}
+        reference={mockPayment.reference}
+        currency="USD"
+        onSuccess={handleMockPaymentSuccess}
+        onClose={() => { setMockPayment(null); setLoading(null); }}
+      />
+    );
   }
 
   // ── Locked state (PAY_PER_USE, no PDF generated yet) ────────────────────────

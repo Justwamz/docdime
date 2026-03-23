@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { MockPaystackModal } from "@/components/paystack/mock-paystack-modal";
 
 declare global {
   interface Window {
@@ -25,6 +26,10 @@ export default function SubscriptionActions({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [mockPayment, setMockPayment] = useState<{
+    reference: string;
+    amountInKobo: number;
+  } | null>(null);
 
   async function handleUpgrade() {
     setLoading(true);
@@ -37,6 +42,12 @@ export default function SubscriptionActions({
     setLoading(false);
 
     if (!res.ok) return;
+
+    // Test mode — show mock Paystack modal
+    if (data.testMode) {
+      setMockPayment({ reference: data.reference, amountInKobo: data.amountInKobo });
+      return;
+    }
 
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
@@ -64,6 +75,18 @@ export default function SubscriptionActions({
     document.body.appendChild(script);
   }
 
+  async function handleMockPaymentSuccess(reference: string) {
+    setMockPayment(null);
+    setLoading(true);
+    await fetch("/api/subscription", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "verify_upgrade", reference }),
+    });
+    setLoading(false);
+    router.refresh();
+  }
+
   async function handleCancel() {
     if (!confirm("Cancel your Pro subscription? Access continues until period end.")) return;
     setLoading(true);
@@ -74,6 +97,19 @@ export default function SubscriptionActions({
     });
     setLoading(false);
     router.refresh();
+  }
+
+  if (mockPayment) {
+    return (
+      <MockPaystackModal
+        email={email ?? ""}
+        amount={mockPayment.amountInKobo}
+        reference={mockPayment.reference}
+        currency="USD"
+        onSuccess={handleMockPaymentSuccess}
+        onClose={() => setMockPayment(null)}
+      />
+    );
   }
 
   if (action === "upgrade") {
