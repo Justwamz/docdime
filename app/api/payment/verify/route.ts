@@ -18,8 +18,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Reference and document ID required" }, { status: 400 });
     }
 
-    // Verify payment — bypass Paystack for test-mode mock references
-    if (!reference.startsWith("mock_")) {
+    // Verify payment
+    if (reference.startsWith("mock_")) {
+      // Only accept mock references when Paystack is not configured (test mode)
+      const paystackKey = process.env.PAYSTACK_SECRET_KEY ?? "";
+      const testMode = !paystackKey || paystackKey.includes("your_paystack");
+      if (!testMode) {
+        return NextResponse.json({ error: "Invalid reference" }, { status: 400 });
+      }
+      // Validate the mock reference exists as a pending transaction owned by this user
+      const pendingTx = await prisma.transaction.findFirst({
+        where: { paystackRef: reference, userId: session.user.id, status: "PENDING" },
+      });
+      if (!pendingTx) {
+        return NextResponse.json({ error: "Invalid reference" }, { status: 400 });
+      }
+    } else {
       const paymentData = await verifyPayment(reference);
       if (paymentData.status !== "success") {
         await prisma.transaction.updateMany({

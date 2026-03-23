@@ -53,7 +53,19 @@ export async function POST(req: Request) {
     }
 
     if (action === "verify_upgrade") {
-      if (!reference.startsWith("mock_")) {
+      if (reference.startsWith("mock_")) {
+        const paystackKey = process.env.PAYSTACK_SECRET_KEY ?? "";
+        const testMode = !paystackKey || paystackKey.includes("your_paystack");
+        if (!testMode) {
+          return NextResponse.json({ error: "Invalid reference" }, { status: 400 });
+        }
+        const pendingTx = await prisma.transaction.findFirst({
+          where: { paystackRef: reference, userId: session.user.id, status: "PENDING" },
+        });
+        if (!pendingTx) {
+          return NextResponse.json({ error: "Invalid reference" }, { status: 400 });
+        }
+      } else {
         const paymentData = await verifyPayment(reference);
         if (paymentData.status !== "success") {
           return NextResponse.json({ error: "Payment failed" }, { status: 400 });

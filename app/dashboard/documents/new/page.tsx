@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { MockPaystackModal } from "@/components/paystack/mock-paystack-modal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -25,6 +26,11 @@ export default function NewDocumentPage() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mockPayment, setMockPayment] = useState<{
+    reference: string;
+    amountInKobo: number;
+    docId: string;
+  } | null>(null);
   const [docPriceUsd, setDocPriceUsd] = useState(0.10);
   const [customers, setCustomers] = useState<Array<{ id: string; name: string }>>([]);
   const [taxes, setTaxes] = useState<Array<{ id: string; name: string; rate: number; isDefault: boolean; isInclusive: boolean }>>([]);
@@ -100,14 +106,21 @@ export default function NewDocumentPage() {
     }
 
     if (checkData.free) {
-      // Free doc (Pro plan quota or test mode) — generate PDF directly
+      // Free doc (Pro plan with remaining quota) — generate PDF directly
       await fetch(`/api/documents/${docId}/pdf`, { method: "POST" });
       setLoading(false);
       router.push(`/dashboard/documents/${docId}`);
       return;
     }
 
-    // Load Paystack inline script and open popup
+    // Test mode — show mock Paystack modal
+    if (checkData.testMode) {
+      setLoading(false);
+      setMockPayment({ reference: checkData.reference, amountInKobo: checkData.amountInKobo, docId });
+      return;
+    }
+
+    // Load real Paystack inline script and open popup
     const script = document.createElement("script");
     script.src = "https://js.paystack.co/v1/inline.js";
     script.onload = () => {
@@ -143,6 +156,24 @@ export default function NewDocumentPage() {
     document.body.appendChild(script);
   }
 
+  async function handleMockPaymentSuccess(reference: string) {
+    const docId = mockPayment!.docId;
+    setMockPayment(null);
+    setLoading(true);
+    const verifyRes = await fetch("/api/payment/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reference, documentId: docId }),
+    });
+    const verifyData = await verifyRes.json();
+    setLoading(false);
+    if (verifyData.success) {
+      router.push(`/dashboard/documents/${docId}`);
+    } else {
+      setError("Payment verification failed");
+    }
+  }
+
   async function handleSaveDraft() {
     setError("");
     setLoading(true);
@@ -158,6 +189,19 @@ export default function NewDocumentPage() {
     } else {
       setError(data.error ?? "Failed to save");
     }
+  }
+
+  if (mockPayment) {
+    return (
+      <MockPaystackModal
+        email={session?.user.email ?? ""}
+        amount={mockPayment.amountInKobo}
+        reference={mockPayment.reference}
+        currency="USD"
+        onSuccess={handleMockPaymentSuccess}
+        onClose={() => setMockPayment(null)}
+      />
+    );
   }
 
   return (
