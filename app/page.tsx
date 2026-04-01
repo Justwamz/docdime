@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FileText, Coins, Globe, Users, ArrowRightLeft, BarChart3 } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { getPricing } from "@/lib/pricing";
@@ -56,37 +57,37 @@ export const metadata: Metadata = {
 function getFeatures(docLabel: string, proMonthlyLabel: string) {
   return [
     {
-      icon: "📄",
+      icon: FileText,
       title: "Professional PDFs",
       description:
         "Generate beautiful, branded PDF invoices, quotes, and purchase orders in seconds.",
     },
     {
-      icon: "💰",
+      icon: Coins,
       title: "Pay Only What You Use",
       description:
         `No monthly lock-in. Pay ${docLabel} per document or upgrade to Pro for ${proMonthlyLabel}/month.`,
     },
     {
-      icon: "🌍",
+      icon: Globe,
       title: "Multi-Currency Support",
       description:
         "Work with 30+ world currencies. Set your local currency once, bill globally.",
     },
     {
-      icon: "👥",
+      icon: Users,
       title: "Customer Management",
       description:
         "Save customer details and auto-fill documents. Track payment history per client.",
     },
     {
-      icon: "🔄",
+      icon: ArrowRightLeft,
       title: "Quote to Invoice",
       description:
         "Convert accepted quotes to invoices with one click. No re-entry needed.",
     },
     {
-      icon: "📊",
+      icon: BarChart3,
       title: "Dashboard Analytics",
       description:
         "See your revenue, outstanding invoices, and document stats at a glance.",
@@ -204,7 +205,9 @@ export default async function LandingPage() {
                 key={feature.title}
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
               >
-                <div className="text-3xl mb-3">{feature.icon}</div>
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 mb-4">
+                  <feature.icon className="w-5 h-5 text-blue-600" strokeWidth={1.75} />
+                </div>
                 <h3 className="font-semibold text-gray-900 mb-2">{feature.title}</h3>
                 <p className="text-sm text-gray-500">{feature.description}</p>
               </div>
