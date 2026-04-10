@@ -11,7 +11,7 @@ async function getResendConfig(): Promise<{ apiKey: string; from: string } | nul
   return apiKey ? { apiKey, from } : null;
 }
 
-export async function sendEmail({
+async function sendEmail({
   to,
   subject,
   html,

@@ -1,4 +1,4 @@
-export interface Currency {
+interface Currency {
   code: string;
   name: string;
   symbol: string;
@@ -36,7 +36,3 @@ export const currencies: Currency[] = [
   { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
   { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
 ];
-
-export function getCurrencySymbol(code: string): string {
-  return currencies.find((c) => c.code === code)?.symbol ?? code;
-}

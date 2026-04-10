@@ -18,25 +18,10 @@ export async function getPaystackPublicKey(): Promise<string> {
   return process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "";
 }
 
-interface InitializePaymentParams {
-  email: string;
-  amount: number;
-  currency?: string;
-  reference?: string;
-  metadata?: Record<string, unknown>;
-  callback_url?: string;
-}
-
 interface PaystackResponse<T> {
   status: boolean;
   message: string;
   data: T;
-}
-
-interface InitializeData {
-  authorization_url: string;
-  access_code: string;
-  reference: string;
 }
 
 interface VerifyData {
@@ -47,27 +32,6 @@ interface VerifyData {
   paid_at: string;
   metadata?: Record<string, unknown>;
   customer: { email: string };
-}
-
-export async function initializePayment(
-  params: InitializePaymentParams
-): Promise<InitializeData> {
-  const secretKey = await getSecretKey();
-  const response = await fetch(`${PAYSTACK_BASE}/transaction/initialize`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      ...params,
-      amount: Math.round(params.amount * 100),
-    }),
-  });
-
-  const result: PaystackResponse<InitializeData> = await response.json();
-  if (!result.status) throw new Error(result.message || "Payment initialization failed");
-  return result.data;
 }
 
 export async function verifyPayment(reference: string): Promise<VerifyData> {

@@ -1,64 +1,43 @@
-# DocDime — Session Context (2026-03-20)
+# DocDime — Session Context (2026-03-21)
 
 ## Current Status
-Build passes, DB seeded (including `staff_welcome` template + integration AppSettings).
+All features implemented, building and deploying successfully on Render.
 
-## Pending Work
-None. All features implemented and seeded.
+## Recent Work This Session
 
----
+### Security Fixes
+- Upgraded Next.js 14.2.3 → 14.2.29 (patches cache poisoning CVE)
+- Added IP-based rate limiting (`lib/rate-limit.ts`): register 5/hr, payment 10/10min, login 10/15min
+- Fixed payment initialization to fail-closed (503 instead of free access when Paystack unconfigured)
+- Account deletion now requires password confirmation (UI + API)
+- Removed default admin credentials from seed console output
 
-## What Was Built This Session
+### PWA + Push Notifications
+- `public/manifest.json`, `public/sw.js`, `public/icons/` — PWA installable
+- `app/icon.svg`, `public/favicon.svg` — Blue rounded square "D" favicon (SVG, crisp at all sizes)
+- `components/pwa/service-worker-register.tsx` + `components/pwa/install-prompt.tsx`
+- `PushSubscription` model in schema (synced to DB)
+- `lib/push.ts` — VAPID web-push, lazy-initialized (avoids build failure when env absent)
+- `/api/push/subscribe` + `/api/push/unsubscribe`
+- Notifications tab in `/dashboard/settings`
+- Push fires alongside emails: overdue invoices, expiring quotes, pro expired, payment confirmed
 
-### Email System
-- `lib/email.ts` — lazy Resend init (build-safe), DB-first API key, `sendTemplateEmail`
-- `lib/email-triggers.ts` — 11 trigger functions (welcome, nudge_3/7/14/21/30day, pro_upgraded, pro_expired, payment_received, payment_received_notify, customer_created, invoice_sent, quote_sent, invoice_overdue, quote_expiring)
-- `lib/cron.ts` — fully replaced: uses trigger functions, daily nudge job, quote expiry, overdue
+### VAPID Keys (in .env and render.yaml)
+- NEXT_PUBLIC_VAPID_PUBLIC_KEY=BHHc5xaAhwzO092f2Azg009X0u9sRolnU5tqxNAixPL9ZFCWFHqTYOsaAlUAKmh6XzaBwMFytSvXB_0SQ5iRNMY
+- VAPID_PRIVATE_KEY=01dC8GILYCNdUGcDv5x0-l8zDsAoLus-ynsfx1_2P8k
+- VAPID_SUBJECT=mailto:admin@docdime.com
 
-### Pricing (DB-driven)
-- `lib/pricing.ts` — reads doc_price_usd, pro_price_usd, pro_annual_price_usd, pro_monthly_docs from AppSettings
-- `app/api/pricing/route.ts` — public GET endpoint for client components
-- Pages updated: landing, subscription, documents/[id], documents/new
-
-### Paystack (DB-first)
-- `lib/paystack.ts` — `getSecretKey()`, `getPaystackPublicKey()` read from AppSettings with env var fallback
-
-### Admin Settings
-- `app/admin/(protected)/settings/page.tsx` + `settings-client.tsx`
-  - Configuration card: pricing, maintenance mode, notification email
-  - Integrations card: Resend (API key, From email) + Paystack (secret, public key) with password masking + show/hide
-
-### Admin Team Page
-- `app/admin/(protected)/team/page.tsx` — lists staff (isAdmin: true users)
-- `app/api/admin/team/route.ts` — POST: create staff with auto-generated password
-- `app/api/admin/team/[id]/route.ts` — DELETE: blocks self-deletion
-- `create-staff-form.tsx` — inline form, auto-generated 14-char password, copy credentials on success
-- `staff-actions.tsx` — Remove button
-
-### Email Templates UI
-- Tiptap rich-text editor (`@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-link`)
-- `/admin/email-templates` — list with Edit/Delete
-- `/admin/email-templates/new` — create with variable auto-detection
-- `/admin/email-templates/[id]/edit` — edit existing
-
-### Other Fixes
-- Landing page: `force-dynamic` added, uses `getPricing()`
-- Recent Users table: `whitespace-nowrap` on date/plan, `max-w-[180px] truncate` on email
-- `app/api/documents/[id]/send/route.ts` — marks doc SENT, fires invoice/quote sent triggers
-
----
-
-## DB Seed State
-Run `npx tsx prisma/seed.ts` to apply. Last run: 2026-03-20 ✅
-
-Templates seeded: welcome, nudge_3/7/14/21/30day, pro_upgraded, pro_expired, payment_received, payment_received_notify, customer_created, invoice_sent, invoice_overdue, quote_sent, quote_expiring, **staff_welcome**
-
-AppSettings seeded: doc_price_usd, pro_price_usd, pro_annual_price_usd, pro_monthly_docs, maintenance_mode, admin_notification_email, resend_api_key, resend_from_email, paystack_secret_key, paystack_public_key
-
----
+### Logo / Branding
+- Real logo (`public/logo.png`) kept in public/ but NOT used in UI — too small
+- All UI uses original blue "D" square + "DocDime" text
+- Favicon is SVG: blue rounded square with white bold "D"
 
 ## Key Architectural Patterns
-- **DB-first config**: empty DB value → fall back to env var. Non-empty DB value overrides.
-- **Fire-and-forget emails**: `.catch(() => {})` — never block API responses.
-- **Lazy Resend init**: `new Resend(key)` inside function body, never at module level (prevents build failure when key absent).
-- **force-dynamic**: any server component/page that reads DB must export this to avoid stale static builds.
+- **DB-first config**: empty DB value → fall back to env var
+- **Fire-and-forget emails/push**: `.catch(() => {})` — never block API responses
+- **Lazy init pattern**: Resend (`lib/email.ts`) and web-push (`lib/push.ts`) initialize inside functions, never at module level (prevents build failure when keys absent)
+- **force-dynamic**: any server page reading DB must export this
+- **Fail-closed**: payment and push silently skip when unconfigured — never grant free access
+
+## Pending
+Nothing. All features shipped.

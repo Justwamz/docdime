@@ -2,7 +2,6 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
-  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -15,8 +14,6 @@ const s3Client = new S3Client({
 });
 
 const BUCKET = process.env.AWS_BUCKET_NAME ?? "docdime-pdfs";
-const AWS_REGION = process.env.AWS_REGION ?? "us-east-1";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 function isS3Configured(): boolean {
   const key = process.env.AWS_ACCESS_KEY_ID ?? "";
@@ -51,15 +48,6 @@ export async function uploadPDF(
   return url;
 }
 
-export async function deletePDF(key: string): Promise<void> {
-  if (!isS3Configured()) {
-    return;
-  }
-
-  const command = new DeleteObjectCommand({ Bucket: BUCKET, Key: key });
-  await s3Client.send(command);
-}
-
 export function getPDFKey(userId: string, docNumber: string): string {
   return `pdfs/${userId}/${docNumber}-${Date.now()}.pdf`;
 }
@@ -87,5 +75,5 @@ export async function uploadLogo(
   await s3Client.send(command);
 
   // Return permanent public URL (bucket must allow public read on logos/*)
-  return `https://${BUCKET}.s3.${AWS_REGION}.amazonaws.com/${key}`;
+  return `https://${BUCKET}.s3.${process.env.AWS_REGION ?? "us-east-1"}.amazonaws.com/${key}`;
 }

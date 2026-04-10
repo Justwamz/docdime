@@ -40,7 +40,6 @@ export type DocumentStatus =
   | "ACCEPTED"
   | "REJECTED"
   | "CANCELLED";
-export type Plan = "PAY_PER_USE" | "PRO";
 
 export interface AppliedTax {
   taxId: string;
@@ -144,32 +143,3 @@ export interface Tax {
   isInclusive: boolean;
 }
 
-export interface BankingDetails {
-  // Mobile money (e.g. M-Pesa)
-  mpesaNumber?: string;
-  bankName?: string;
-  accountNumber?: string;
-  accountName?: string;
-  // Nigeria
-  bankCode?: string;
-  // South Africa
-  branchCode?: string;
-  // International
-  iban?: string;
-  swift?: string;
-  routingNumber?: string;
-  bsb?: string;
-}
-
-export interface CountryConfig {
-  name: string;
-  currency: string;
-  bankingFields: string[];
-}
-
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}

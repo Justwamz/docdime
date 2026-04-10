@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
-  req: Request,
+  _req: Request,
   { params }: { params: { id: string } }
 ) {
   const session = await getServerSession(authOptions);

@@ -11,7 +11,7 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>();
 
-export interface RateLimitResult {
+interface RateLimitResult {
   allowed: boolean;
   remaining: number;
   resetAt: number;

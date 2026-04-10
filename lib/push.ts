@@ -2,7 +2,7 @@
 const webpush = require("web-push") as typeof import("web-push");
 import { prisma } from "./prisma";
 
-export type PushPayload = {
+type PushPayload = {
   title: string;
   body: string;
   url?: string;

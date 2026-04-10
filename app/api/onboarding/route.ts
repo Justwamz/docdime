@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Consent required" }, { status: 400 });
     }
 
-    const user = await prisma.user.update({
+    await prisma.user.update({
       where: { id: session.user.id },
       data: {
         businessName,

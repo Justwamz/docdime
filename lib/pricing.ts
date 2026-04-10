@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 
-export interface Pricing {
+interface Pricing {
   docPriceUsd: number;       // e.g. 0.10
   proMonthlyUsd: number;     // e.g. 2  (display-only monthly equivalent)
   proAnnualUsd: number;      // e.g. 20 (actual annual charge)

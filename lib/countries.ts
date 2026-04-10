@@ -1,17 +1,17 @@
-export interface CountryConfig {
+interface CountryConfig {
   name: string;
   currency: string;
   bankingFields: BankingField[];
 }
 
-export interface BankingField {
+interface BankingField {
   key: string;
   label: string;
   required: boolean;
   placeholder?: string;
 }
 
-export const countryConfigs: Record<string, CountryConfig> = {
+const countryConfigs: Record<string, CountryConfig> = {
   KE: {
     name: "Kenya",
     currency: "KES",

@@ -14,7 +14,7 @@ import { currencies } from "@/lib/currencies";
 import { Switch } from "@/components/ui/switch";
 
 export default function SettingsPage() {
-  const { data: session, update } = useSession();
+  const { update } = useSession();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -233,6 +233,7 @@ export default function SettingsPage() {
                   <Label>Business Logo</Label>
                   <div className="flex items-center gap-4 mt-1 flex-wrap">
                     {profile.businessLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={profile.businessLogo}
                         alt="Business logo"
